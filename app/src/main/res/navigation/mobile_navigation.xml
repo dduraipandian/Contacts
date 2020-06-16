@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_history">
+
+    <fragment
+        android:id="@+id/navigation_history"
+        android:name="com.thuruthuru.contacts.ui.history.HistoryFragment"
+        android:label="@string/title_history"
+        tools:layout="@layout/fragment_history" />
+
+    <fragment
+        android:id="@+id/navigation_dialer"
+        android:name="com.thuruthuru.contacts.ui.dialer.DialerFragment"
+        android:label="@string/title_dialer"
+        tools:layout="@layout/fragment_dialer" />
+
+    <fragment
+        android:id="@+id/navigation_contacts"
+        android:name="com.thuruthuru.contacts.ui.contacts.ContactsFragment"
+        android:label="@string/title_contacts"
+        tools:layout="@layout/fragment_contacts" />
+
+    <fragment
+        android:id="@+id/navigation_fav"
+        android:name="com.thuruthuru.contacts.ui.fav.FavFragment"
+        android:label="@string/title_favourites"
+        tools:layout="@layout/fragment_fav" />
+</navigation>
