@@ -14,7 +14,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -27,6 +26,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
 
     private LayoutInflater cursorInflater;
     private Context context;
+    private static Cursor cursor;
     private int layout;
     private boolean DISABLE_CALL;
     private boolean DISABLE_FAV;
@@ -36,6 +36,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
                          boolean DISABLE_CALL, boolean DISABLE_FAV) {
         super(context, layout, c, from, to, flag);
         cursorInflater = LayoutInflater.from(context);
+        cursor = c;
         this.context = context;
         this.layout = layout;
         this.DISABLE_CALL = DISABLE_CALL;
@@ -47,28 +48,19 @@ public class CustomAdapter extends SimpleCursorAdapter {
         return cursorInflater.inflate(layout, null);
     }
 
+    private void getCurrentCursor(View v, Cursor cursor) {
+        int position = (int) v.getTag();
+        cursor.moveToPosition(position);
+    }
+
+    private String getPhoneNumber() {
+        String phNumber = getCursor().getString(5);
+        return phNumber;
+    }
+
     private boolean isFavorite() {
         String starred = getCursor().getString(6);
         return starred.equals("1");
-    }
-
-    private String phoneType() {
-        String type = getCursor().getString(4);
-        String phResource;
-        switch (type) {
-            case "1":
-                phResource = "H";
-                break;
-            case "2":
-                phResource = "M";
-                break;
-            case "3":
-                phResource = "W";
-                break;
-            default:
-                phResource = "O";
-        }
-        return phResource;
     }
 
     private int phoneTypeResource() {
@@ -90,16 +82,21 @@ public class CustomAdapter extends SimpleCursorAdapter {
         return phResource;
     }
 
+    private View findViewById(View view, int viewId, Cursor cursor) {
+        View resourceView = view.findViewById(viewId);
+        resourceView.setTag(cursor.getPosition());
+        return resourceView;
+    }
+
     @Override
     public void bindView(View view, Context context, final Cursor cursor) {
         // R.layout.list_row is your xml layout for each row
         super.bindView(view, context, cursor);
-        ImageButton callField = (ImageButton) view.findViewById(R.id.call);
-        ImageView addFavField = (ImageView) view.findViewById(R.id.addFav);
-        ImageView newMessageField = (ImageView) view.findViewById(R.id.newMessage);
-        ImageView phTypeImgField = (ImageView) view.findViewById(R.id.phTypeImage);
+        ImageButton callField = (ImageButton) findViewById(view, R.id.call, cursor);
+        ImageView addFavField = (ImageView) findViewById(view, R.id.addFav, cursor);
+        ImageView newMessageField = (ImageView) findViewById(view, R.id.newMessage, cursor);
+        ImageView phTypeImgField = (ImageView) findViewById(view, R.id.phTypeImage, cursor);
 
-        String type = phoneType();
         int typeRes = phoneTypeResource();
 
         boolean starred = isFavorite();
@@ -107,13 +104,12 @@ public class CustomAdapter extends SimpleCursorAdapter {
         addFavField.setColorFilter(context.getResources().getColor(colorR, null));
         phTypeImgField.setImageResource(typeRes);
 
+        newMessageField.setTag(cursor.getPosition());
         newMessageField.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                ImageView callField = (ImageView) v;
-                View parent = (View) callField.getParent();
-                TextView phoneNumberField = parent.findViewById(R.id.phoneNumber);
-                String phoneNumber = phoneNumberField.getText().toString();
+                getCurrentCursor(v, cursor);
+                String phoneNumber = getPhoneNumber();
                 composeSmsMessage(phoneNumber);
             }
         });
@@ -122,17 +118,16 @@ public class CustomAdapter extends SimpleCursorAdapter {
             callField.setVisibility(View.GONE);
         } else {
             callField.setClickable(true);
+            callField.setTag(cursor.getPosition());
             callField.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    ImageButton callField = (ImageButton) v;
-                    View parent = (View) callField.getParent();
-                    TextView phoneNumberField = parent.findViewById(R.id.phoneNumber);
-                    String phoneNumber = phoneNumberField.getText().toString();
+                    getCurrentCursor(v, cursor);
+                    String phoneNumber = getPhoneNumber();
                     if (isPermissionGranted(v, Manifest.permission.CALL_PHONE))
                         callAction(phoneNumber);
                     else
-                        showToast("Please provide permissions to make call from settings menu.");
+                        showToast("Please provide permissions to make call from main_menu menu.");
                 }
             });
         }
@@ -145,11 +140,10 @@ public class CustomAdapter extends SimpleCursorAdapter {
                 @Override
                 public void onClick(View v) {
                     if (isPermissionGranted(v, Manifest.permission.WRITE_CONTACTS)) {
-                        int position = (int) v.getTag();
-                        cursor.moveToPosition(position);
+                        getCurrentCursor(v, cursor);
                         setFav(v, cursor);
                     } else
-                        showToast("Please provide permissions to make call from settings menu.");
+                        showToast("Please provide permissions to make call from main_menu menu.");
                 }
             });
         }

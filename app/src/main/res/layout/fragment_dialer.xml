@@ -53,7 +53,7 @@
                 android:gravity="center"
                 android:text="NEW"
                 android:textStyle="bold"
-                android:textColor="@color/colorPrimaryDark"
+                android:textColor="@color/colorBackspace"
                 android:textSize="14sp" />
         </TableRow>
 
@@ -242,16 +242,38 @@
                             android:text="*"
                             android:textSize="26sp" />
 
-                        <Button
+                        <LinearLayout
                             android:id="@+id/button0"
                             android:layout_width="70dp"
                             android:layout_height="70dp"
-                            android:layout_marginEnd="30dp"
-                            android:layout_marginTop="5dp"
-                            android:layout_marginBottom="5dp"
                             android:background="@drawable/roundedbutton"
-                            android:text="0"
-                            android:textSize="26sp" />
+                            android:layout_marginTop="5dp"
+                            android:layout_marginEnd="30dp"
+                            android:layout_marginBottom="5dp"
+                            android:clickable="true"
+                            android:descendantFocusability="blocksDescendants"
+                            android:gravity="center_vertical|center_horizontal"
+                            android:orientation="vertical">
+
+                            <Button
+                                android:layout_width="wrap_content"
+                                android:layout_height="25dp"
+                                android:layout_gravity="bottom|center_horizontal"
+                                android:background="@null"
+                                android:clickable="false"
+                                android:text="0"
+                                android:textSize="23sp" />
+
+                            <Button
+                                android:layout_width="wrap_content"
+                                android:layout_height="25dp"
+                                android:layout_gravity="center_horizontal|top"
+                                android:background="@null"
+                                android:textColor="@color/colorPrimary"
+                                android:clickable="false"
+                                android:text="+"
+                                android:textSize="26sp" />
+                        </LinearLayout>
 
                         <Button
                             android:id="@+id/buttonHash"

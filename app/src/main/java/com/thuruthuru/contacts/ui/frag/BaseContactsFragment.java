@@ -2,7 +2,6 @@ package com.thuruthuru.contacts.ui.frag;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -44,6 +43,11 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
             ContactsContract.CommonDataKinds.Phone.NUMBER,
             ContactsContract.CommonDataKinds.Phone.STARRED
     };
+
+    private static final String ORDER_BY = Build.VERSION.SDK_INT
+                    >= Build.VERSION_CODES.HONEYCOMB ?
+    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME_PRIMARY :
+    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME;
 
     @SuppressLint("InlinedApi")
     private static final String[] PROJECTION = {
@@ -176,7 +180,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
 
         cursorAdapter = new CustomAdapter(
                 getActivity(),
-                R.layout.contact_list_item,
+                R.layout.contact_item,
                 null,
                 FROM_COLUMNS,
                 TO_IDS, 0, DISABLE_CALL, DISABLE_FAV);
@@ -222,14 +226,6 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
         DISABLE_CALL = !granted;
     }
 
-    private void closeNow() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-            getActivity().finishAffinity();
-        } else {
-            getActivity().finish();
-        }
-    }
-
     @Override
     public void onItemClick(AdapterView<?> parent, View item, int position, long rowID) {
         // Get the Cursor
@@ -269,7 +265,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
                 PROJECTION,
                 SELECTION,
                 selectionArgs,
-                null
+                ORDER_BY
         );
     }
 

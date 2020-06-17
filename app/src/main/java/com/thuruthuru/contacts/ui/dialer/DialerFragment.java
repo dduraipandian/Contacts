@@ -13,12 +13,15 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
 import android.content.Intent;
 import android.net.Uri;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -63,24 +66,16 @@ public class DialerFragment extends Fragment{
             public void onClick(View v) {
                 Button btn = (Button) v;
                 String value = btn.getText().toString();
-                String phoneNumber = phoneField.getText().toString();
-
-                StringWriter sw = new StringWriter();
-                sw.append(phoneNumber);
-                sw.append(value);
-
-                phoneField.setText(sw.toString());
-
-                if(phoneField.getText().toString().length() == 0)
-                    addNew.setText("NEW");
-                else
-                    addNew.setText("ADD");
-
-                addNew.setTextColor(getResources().getColor(R.color.colorPrimaryDark, null));
+                setNumber(value);
             }
         };
 
-        ((Button) root.findViewById(R.id.button0)).setOnClickListener(onClickListener);
+        ((LinearLayout) root.findViewById(R.id.button0)).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setNumber("0");
+            }
+        });
         ((Button) root.findViewById(R.id.button1)).setOnClickListener(onClickListener);
         ((Button) root.findViewById(R.id.button2)).setOnClickListener(onClickListener);
         ((Button) root.findViewById(R.id.button3)).setOnClickListener(onClickListener);
@@ -92,6 +87,14 @@ public class DialerFragment extends Fragment{
         ((Button) root.findViewById(R.id.button9)).setOnClickListener(onClickListener);
         ((Button) root.findViewById(R.id.buttonStar)).setOnClickListener(onClickListener);
         ((Button) root.findViewById(R.id.buttonHash)).setOnClickListener(onClickListener);
+
+        ((LinearLayout) root.findViewById(R.id.button0)).setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                setNumber("+");
+                return true;
+            }
+        });
 
         ((ImageButton) root.findViewById(R.id.delete)).setOnClickListener(new View.OnClickListener(){
             @Override
@@ -153,4 +156,23 @@ public class DialerFragment extends Fragment{
         return root;
     }
 
+    private void setNumber(String num){
+        String phoneNumber = phoneField.getText().toString();
+
+        StringWriter sw = new StringWriter();
+        sw.append(phoneNumber);
+        sw.append(num);
+
+        phoneField.setText(sw.toString());
+
+        if(phoneField.getText().toString().length() == 0){
+            addNew.setText("NEW");
+            addNew.setTextColor(getResources().getColor(R.color.colorBackspace, null));
+        }
+        else{
+            addNew.setText("ADD");
+            addNew.setTextColor(getResources().getColor(R.color.colorPrimaryDark, null));
+        }
+
+    }
 }

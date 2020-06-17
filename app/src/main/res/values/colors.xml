@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#6200EE</color>
-    <color name="colorPrimaryDark">#3700B3</color>
+    <color name="colorPrimary">#605F5F</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorAddContact">#6D80C3</color>
     <color name="colorAddNewContact">#E6E6E6</color>
     <color name="colorAccent">#03DAC5</color>
     <color name="colorFabBG">#E6E6E6</color>
     <color name="colorFabFG">#000000</color>
     <color name="colorCallGreen">#2eb82e</color>
     <color name="colorPhoneNumber">#248f24</color>
+    <color name="colorBackspace">#b3b3b3</color>
+    <color name="colorMissedCall">#ff6666</color>
 </resources>

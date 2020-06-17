@@ -30,4 +30,13 @@
         android:divider="@null"
         android:dividerHeight="0dp">
     </ListView>
+
+    <TextView android:id="@+id/empty"
+        android:visibility="gone"
+        android:gravity="center_horizontal|center_vertical"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:textSize="20dp"
+        android:text="No Contacts to display" />
+
 </LinearLayout>
