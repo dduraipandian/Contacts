@@ -22,7 +22,8 @@ import androidx.navigation.Navigation;
 import androidx.navigation.ui.AppBarConfiguration;
 import androidx.navigation.ui.NavigationUI;
 
-import java.util.List;
+import com.thuruthuru.contacts.ui.about.About;
+import com.thuruthuru.contacts.ui.settings.Setting;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -59,11 +60,15 @@ public class MainActivity extends AppCompatActivity {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            return true;
+            showSetting();
         }
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_delete_all_logs) {
             deleteAllCallLogs();
+        }
+
+        if (id == R.id.about) {
+            showAbout();
         }
 
         return super.onOptionsItemSelected(item);
@@ -97,6 +102,16 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         dialog.show();
+    }
+
+    void showAbout(){
+        Intent intent = new Intent(this, About.class);
+        startActivityForResult(intent, 0);
+    }
+
+    void showSetting(){
+        Intent intent = new Intent(this, Setting.class);
+        startActivityForResult(intent, 0);
     }
 
 }

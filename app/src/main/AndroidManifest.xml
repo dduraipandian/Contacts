@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
+    android:versionCode="1"
+    android:versionName="1.0"
     package="com.thuruthuru.contacts">
 
     <uses-permission android:name="android.permission.READ_CALL_LOG" />
@@ -30,10 +32,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-<!--        <activity-->
-<!--            android:name=".ui.call_details.CallDetailFragment"-->
-<!--            android:label="Call details">-->
-<!--        </activity>-->
+
+        <activity
+            android:name=".ui.about.About"
+            android:label="About">
+        </activity>
+        <activity
+            android:name=".ui.settings.Setting"
+            android:label="About">
+        </activity>
     </application>
 
 </manifest>
