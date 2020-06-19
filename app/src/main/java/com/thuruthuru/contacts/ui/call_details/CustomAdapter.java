@@ -82,9 +82,11 @@ public class CustomAdapter extends SimpleCursorAdapter {
                 break;
             case "5":
                 phResource = R.drawable.ic_cancel_black_24dp;
+                callType = "Rejected call";
                 break;
             case "6":
                 phResource = R.drawable.ic_app_blocking_black_24dp;
+                callType = "Blocked call";
                 break;
             default:
                 phResource = android.R.drawable.sym_call_missed;
@@ -148,11 +150,14 @@ public class CustomAdapter extends SimpleCursorAdapter {
         callTypeField.setText((String)typeRes.get(1) + ",");
 
         int phResource = (int)typeRes.get(0);
-        if (missedCall == phResource || R.drawable.ic_cancel_black_24dp == phResource ||
-                R.drawable.ic_app_blocking_black_24dp == phResource) {
+        if (missedCall == phResource
+                || R.drawable.ic_cancel_black_24dp == phResource
+                || R.drawable.ic_app_blocking_black_24dp == phResource) {
             // TextView phoneNumberField = (TextView) findViewById(view, R.id.phoneNumber, cursor);
             // phoneNumberField.setTextColor(context.getResources().getColor(R.color.colorMissedCall, null));
             callTypeField.setTextColor(context.getResources().getColor(R.color.colorMissedCall, null));
+        } else{
+            callTypeField.setTextColor(context.getResources().getColor(R.color.colorPrimary, null));
         }
 
 

@@ -126,17 +126,17 @@ public class CustomAdapter extends SimpleCursorAdapter {
                 Uri.encode(number));
 
         String[] mPhoneNumberProjection = {
-                ContactsContract.CommonDataKinds.Phone._ID,
+                ContactsContract.Contacts._ID,
                 ContactsContract.CommonDataKinds.Phone.NUMBER,
-                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                ContactsContract.CommonDataKinds.Phone.PHOTO_THUMBNAIL_URI,
+                ContactsContract.Contacts.DISPLAY_NAME,
+                ContactsContract.Contacts.PHOTO_THUMBNAIL_URI,
         };
         Cursor cur = context.getContentResolver().query(lookupUri, mPhoneNumberProjection, null, null, null);
         String[] values = {null, null};
         try {
             if (cur.moveToFirst()) {
-                values[0] = cur.getString(cur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME));
-                values[1] = cur.getString(cur.getColumnIndex(ContactsContract.CommonDataKinds.Phone.PHOTO_THUMBNAIL_URI));
+                values[0] = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                values[1] = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
             }
         } finally {
             if (cur != null)
@@ -178,7 +178,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
         }
 
         if(this.simSlots > 1)
-            simField.setText("SIM " + deviceNum +": ");
+            simField.setText(" SIM " + deviceNum);
         else simField.setVisibility(View.GONE);
 
 //        Log.i(TAG, "Single or Dula Sim " + manager.getPhoneCount());
@@ -195,11 +195,14 @@ public class CustomAdapter extends SimpleCursorAdapter {
         int typeRes = phoneTypeResource();
         phTypeImgField.setImageResource(typeRes);
 
-        if (missedCall == typeRes || R.drawable.ic_cancel_black_24dp == typeRes
-        || R.drawable.ic_app_blocking_black_24dp == typeRes) {
+        if (missedCall == typeRes
+                || R.drawable.ic_cancel_black_24dp == typeRes
+                || R.drawable.ic_app_blocking_black_24dp == typeRes) {
             // TextView phoneNumberField = (TextView) findViewById(view, R.id.phoneNumber, cursor);
             // phoneNumberField.setTextColor(context.getResources().getColor(R.color.colorMissedCall, null));
             phTypeImgField.setColorFilter(context.getResources().getColor(R.color.colorMissedCall, null));
+        } else{
+            phTypeImgField.setColorFilter(null);
         }
 
         String callRelativeDuration = getFormattedCallDuration(callDuration);

@@ -36,6 +36,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.thuruthuru.contacts.R;
 import com.thuruthuru.contacts.ui.call_details.CustomAdapter;
+import com.thuruthuru.contacts.ui.call_details.BottomSheetListView;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,7 +79,7 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
 
     // Define global mutable variables
     // Define a ListView object
-    private ListView callList;
+    private ListView BottomSheetListView;
 
     // An adapter that binds the result Cursor to the ListView
     private SimpleCursorAdapter cursorAdapter;
@@ -91,7 +92,7 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
             CallLog.Calls.NUMBER + " LIKE ? )";
 
     private BottomSheetBehavior mBehavior;
-    private AppBarLayout app_bar_layout;
+    private BottomSheetListView callList;
     private String phoneNumber;
     private int simSlots;
     private String userName = null;
@@ -108,10 +109,10 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
                 Uri.encode(number));
 
         String[] mPhoneNumberProjection = {
-                ContactsContract.CommonDataKinds.Phone._ID,
+                ContactsContract.Contacts._ID,
                 ContactsContract.CommonDataKinds.Phone.NUMBER,
-                ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
-                ContactsContract.CommonDataKinds.Phone.PHOTO_THUMBNAIL_URI,
+                ContactsContract.Contacts.DISPLAY_NAME,
+                ContactsContract.Contacts.PHOTO_URI,
         };
         Cursor cur = getActivity().getContentResolver().query(lookupUri, mPhoneNumberProjection, null, null, null);
         String[] values = {null, null};
@@ -163,7 +164,7 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
         list.addAll(Arrays.asList(FROM_COLUMNS));
         list.toArray(PROJECTION);
 
-        callList = (ListView) view.findViewById(R.id.callDetailsListView);
+        callList = (BottomSheetListView) view.findViewById(R.id.callDetailsListView);
         TextView userName = (TextView) view.findViewById(R.id.userName);
         ImageView icon = (ImageView) view.findViewById(R.id.icon);
 

@@ -26,9 +26,8 @@
 
             <ImageView
                 android:id="@+id/callTypeImage"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:background="@drawable/ic_person_24dp"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
                 android:layout_gravity="center_vertical|center_horizontal" />
 
             <LinearLayout
@@ -71,7 +70,6 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="bottom"
-                    android:layout_marginStart="5dp"
                     android:textColor="#000000"
                     />
 

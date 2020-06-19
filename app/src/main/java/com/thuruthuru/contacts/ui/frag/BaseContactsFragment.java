@@ -35,40 +35,43 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
 
     @SuppressLint("InlinedApi")
     private static final String[] FROM_COLUMNS = {
-            ContactsContract.CommonDataKinds.Phone.PHOTO_THUMBNAIL_URI,
+            ContactsContract.Contacts.PHOTO_THUMBNAIL_URI,
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB ?
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME_PRIMARY :
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                    ContactsContract.Contacts.DISPLAY_NAME_PRIMARY :
+                    ContactsContract.Contacts.DISPLAY_NAME,
             ContactsContract.CommonDataKinds.Phone.TYPE,
             ContactsContract.CommonDataKinds.Phone.NUMBER,
-            ContactsContract.CommonDataKinds.Phone.STARRED
+            ContactsContract.Contacts.STARRED
     };
 
-    private static final String ORDER_BY = Build.VERSION.SDK_INT
+    private static final String order_by = Build.VERSION.SDK_INT
                     >= Build.VERSION_CODES.HONEYCOMB ?
-    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME_PRIMARY :
-    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME;
+    ContactsContract.Contacts.DISPLAY_NAME_PRIMARY :
+    ContactsContract.Contacts.DISPLAY_NAME + " COLLATE NOCASE ASC NULLS LAST ";
+
+
+    private static final String ORDER_BY = "CAST( " + order_by + " as INT) COLLATE NOCASE ASC, "+ order_by +" COLLATE NOCASE ASC ";
 
     @SuppressLint("InlinedApi")
     private static final String[] PROJECTION = {
-            ContactsContract.CommonDataKinds.Phone._ID,
-            ContactsContract.CommonDataKinds.Phone.LOOKUP_KEY,
-            ContactsContract.CommonDataKinds.Phone.PHOTO_THUMBNAIL_URI,
+            ContactsContract.Contacts._ID,
+            ContactsContract.Contacts.LOOKUP_KEY,
+            ContactsContract.Contacts.PHOTO_THUMBNAIL_URI,
             Build.VERSION.SDK_INT
                     >= Build.VERSION_CODES.HONEYCOMB ?
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME_PRIMARY :
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME,
+                    ContactsContract.Contacts.DISPLAY_NAME_PRIMARY :
+                    ContactsContract.Contacts.DISPLAY_NAME,
             ContactsContract.CommonDataKinds.Phone.TYPE,
             ContactsContract.CommonDataKinds.Phone.NUMBER,
-            ContactsContract.CommonDataKinds.Phone.STARRED
+            ContactsContract.Contacts.STARRED
     };
 
     // Defines the text expression
     @SuppressLint("InlinedApi")
     private static String selection_display_name =
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB ?
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME_PRIMARY + " LIKE ?" :
-                    ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME + " LIKE ?";
+                    ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?" :
+                    ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?";
 
     private String SELECTION = "(" + selection_display_name + " or " +
             ContactsContract.CommonDataKinds.Phone.NUMBER + " LIKE ? )";
@@ -135,7 +138,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
 
         if (ONLY_FAV) {
             SELECTION = SELECTION + " and " +
-                    ContactsContract.CommonDataKinds.Phone.STARRED + " = '1' ";
+                    ContactsContract.Contacts.STARRED + " = '1' ";
         }
 
         if (SEARCH_ENABLED) {
