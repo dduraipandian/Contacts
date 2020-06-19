@@ -33,6 +33,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
     private Context context;
     private static Cursor cursor;
     private int layout;
+    private int simSlots;
     private final int missedCall = android.R.drawable.sym_call_missed;
     private long LIMIT_IN_MILL_3DAY = 3 * 24 * 60 * 60 * 1000;
 
@@ -41,12 +42,13 @@ public class CustomAdapter extends SimpleCursorAdapter {
     int SECONDS_IN_HOUR = (MINUTES_IN_HOURS * SECONDS_IN_MINUTE);
 
 
-    public CustomAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flag) {
+    public CustomAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flag, int simSlots) {
         super(context, layout, c, from, to, flag);
         cursorInflater = LayoutInflater.from(context);
         cursor = c;
         this.context = context;
         this.layout = layout;
+        this.simSlots = simSlots;
     }
 
     @Override
@@ -174,9 +176,8 @@ public class CustomAdapter extends SimpleCursorAdapter {
         finally {
             deviceNum = deviceNum + 1;
         }
-        TelephonyManager manager = (TelephonyManager) this.context.getSystemService(Context.TELEPHONY_SERVICE);
 
-        if(manager.getPhoneCount() > 1)
+        if(this.simSlots > 1)
             simField.setText("SIM " + deviceNum +": ");
         else simField.setVisibility(View.GONE);
 

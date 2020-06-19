@@ -93,11 +93,13 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
     private BottomSheetBehavior mBehavior;
     private AppBarLayout app_bar_layout;
     private String phoneNumber;
+    private int simSlots;
     private String userName = null;
     private String photoUri = null;
 
-    public CallDetailFragment(String phoneNumber) {
+    public CallDetailFragment(String phoneNumber, int simSlots) {
         this.phoneNumber = phoneNumber;
+        this.simSlots = simSlots;
     }
 
     public String[] getDisplayName(String number) {
@@ -149,9 +151,8 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
         finally {
             deviceNum = deviceNum + 1;
         }
-        TelephonyManager manager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
 
-        if(manager.getPhoneCount() > 1)
+        if(simSlots > 1)
             title.setText("SIM " + deviceNum +": " + this.phoneNumber);
         else title.setText(this.phoneNumber);
 

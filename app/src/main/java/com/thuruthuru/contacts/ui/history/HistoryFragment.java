@@ -16,6 +16,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
+import android.telephony.TelephonyManager;
 import android.text.Editable;
 import android.text.TextUtils;
 import android.text.TextWatcher;
@@ -43,6 +44,7 @@ import com.thuruthuru.contacts.R;
 public class HistoryFragment extends Fragment implements AdapterView.OnItemClickListener,
         LoaderManager.LoaderCallbacks<Cursor> {
 
+    private static int simSlots;
     @SuppressLint("InlinedApi")
     private static final String[] PROJECTION_KEYS = {
             CallLog.Calls._ID
@@ -149,12 +151,17 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
     private void showCallLogs() {
         // Gets the ListView from the View list of the parent activity
 
+        TelephonyManager manager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
+
+        simSlots = manager.getPhoneCount();
+
         cursorAdapter = new CustomAdapter(
                 getActivity(),
                 R.layout.recent_contact_item,
                 null,
                 FROM_COLUMNS,
-                TO_IDS, 0);
+                TO_IDS, 0,
+                simSlots);
         callList.setAdapter(cursorAdapter);
         callList.setOnItemClickListener(this);
 
@@ -223,7 +230,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
 //        startActivity(intent);
 
         // display sheet
-        CallDetailFragment fragment = new CallDetailFragment(phoneNumber);
+        CallDetailFragment fragment = new CallDetailFragment(phoneNumber, simSlots);
         fragment.show(getActivity().getSupportFragmentManager(), fragment.getTag());
     }
 
