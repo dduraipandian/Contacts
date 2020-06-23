@@ -17,87 +17,102 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-<!--            <Switch-->
-<!--                android:id="@+id/switch1"-->
-<!--                android:layout_width="match_parent"-->
-<!--                android:layout_height="wrap_content"-->
-<!--                android:background="@drawable/bottom_line"-->
-<!--                android:paddingStart="30dp"-->
-<!--                android:paddingEnd="30dp"-->
-<!--                android:paddingBottom="20dp"-->
-<!--                android:checked="true"-->
-<!--                android:theme="@android:style/Theme.Holo.Light"-->
-<!--                android:text="Only Show contacts with phone number" />-->
+            <!--            <Switch-->
+            <!--                android:id="@+id/switch1"-->
+            <!--                android:layout_width="match_parent"-->
+            <!--                android:layout_height="wrap_content"-->
+            <!--                android:background="@drawable/bottom_line"-->
+            <!--                android:paddingStart="30dp"-->
+            <!--                android:paddingEnd="30dp"-->
+            <!--                android:paddingBottom="20dp"-->
+            <!--                android:checked="true"-->
+            <!--                android:theme="@android:style/Theme.Holo.Light"-->
+            <!--                android:text="Only Show contacts with phone number" />-->
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:paddingBottom="10dp"
                 android:background="@drawable/bottom_line"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:paddingBottom="10dp">
 
                 <TextView
                     android:id="@+id/textView"
-                    android:paddingTop="20dp"
-                    android:paddingStart="30dp"
-                    android:paddingEnd="30dp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:paddingStart="30dp"
+                    android:paddingTop="20dp"
+                    android:paddingEnd="30dp"
                     android:text="Show contacts from" />
 
                 <CheckBox
                     android:id="@+id/phone"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingBottom="20dp"
-                    android:paddingTop="20dp"
-                    android:paddingStart="30dp"
-                    android:paddingEnd="30dp"
-                    android:checked="true"
                     android:button="@null"
+                    android:checked="true"
                     android:drawableRight="?android:attr/listChoiceIndicatorMultiple"
-                    android:theme="@android:style/Theme.Holo.Light"
-                    android:text="Phone" />
+                    android:paddingStart="30dp"
+                    android:paddingTop="20dp"
+                    android:paddingEnd="30dp"
+                    android:paddingBottom="20dp"
+                    android:text="Phone"
+                    android:theme="@android:style/Theme.Holo.Light" />
 
                 <CheckBox
                     android:id="@+id/sim"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingBottom="20dp"
-                    android:paddingStart="30dp"
-                    android:paddingEnd="30dp"
                     android:button="@null"
                     android:checked="true"
                     android:drawableRight="?android:attr/listChoiceIndicatorMultiple"
-                    android:theme="@android:style/Theme.Holo.Light"
-                    android:text="Sim" />
+                    android:paddingStart="30dp"
+                    android:paddingEnd="30dp"
+                    android:paddingBottom="20dp"
+                    android:text="Sim"
+                    android:theme="@android:style/Theme.Holo.Light" />
 
                 <CheckBox
                     android:id="@+id/email"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingBottom="20dp"
-                    android:paddingStart="30dp"
-                    android:paddingEnd="30dp"
                     android:button="@null"
                     android:checked="true"
                     android:drawableRight="?android:attr/listChoiceIndicatorMultiple"
-                    android:theme="@android:style/Theme.Holo.Light"
-                    android:text="Gmail" />
+                    android:paddingStart="30dp"
+                    android:paddingEnd="30dp"
+                    android:paddingBottom="20dp"
+                    android:text="Gmail"
+                    android:theme="@android:style/Theme.Holo.Light" />
+
                 <CheckBox
                     android:id="@+id/whatspp"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingBottom="20dp"
-                    android:paddingStart="30dp"
-                    android:paddingEnd="30dp"
                     android:button="@null"
                     android:checked="false"
                     android:drawableRight="?android:attr/listChoiceIndicatorMultiple"
-                    android:theme="@android:style/Theme.Holo.Light"
-                    android:text="WhatsApp" />
+                    android:paddingStart="30dp"
+                    android:paddingEnd="30dp"
+                    android:paddingBottom="20dp"
+                    android:text="WhatsApp"
+                    android:theme="@android:style/Theme.Holo.Light" />
+
             </LinearLayout>
 
+
+            <Switch
+                android:id="@+id/call_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bottom_line"
+                android:checked="true"
+                android:paddingTop="20dp"
+                android:paddingStart="40dp"
+                android:paddingEnd="40dp"
+                android:paddingBottom="20dp"
+                android:text="Group call logs"
+                android:theme="@android:style/Theme.Holo.Light" />
 
         </LinearLayout>
 

@@ -97,6 +97,16 @@
                                     app:srcCompat="@drawable/ic_home_black_24dp" />
 
                                 <TextView
+                                    android:id="@+id/repeatedCalls"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_gravity="top"
+                                    android:layout_marginStart="5dp"
+                                    android:textSize="13dp"
+                                    android:text="(1)"
+                                    android:textColor="@color/colorAddContact" />
+
+                                <TextView
                                     android:id="@+id/phoneNumber"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
@@ -144,7 +154,12 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:gravity="bottom|start"
-                            android:textColor="@color/colorAddContact" />
+                            android:background="@drawable/roundedbutton"
+                            android:backgroundTint="@color/colorBackspace"
+                            android:padding="5dp"
+                            android:textSize="11dp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF" />
 
                         <LinearLayout
                             android:layout_width="match_parent"

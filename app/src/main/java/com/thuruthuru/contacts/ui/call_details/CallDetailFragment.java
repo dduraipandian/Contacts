@@ -3,6 +3,7 @@ package com.thuruthuru.contacts.ui.call_details;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Dialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -17,6 +18,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
+import androidx.appcompat.app.AlertDialog;
 import androidx.cardview.widget.CardView;
 import androidx.cursoradapter.widget.SimpleCursorAdapter;
 import androidx.loader.app.LoaderManager;
@@ -95,23 +97,37 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
 
     public String[] getDisplayName(String number) {
         /// number is the phone number
-        Uri lookupUri = Uri.withAppendedPath(ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,
+        Uri lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
                 Uri.encode(number));
 
         String[] mPhoneNumberProjection = {
-                ContactsContract.Contacts._ID,
-                ContactsContract.CommonDataKinds.Phone.NUMBER,
-                ContactsContract.Contacts.DISPLAY_NAME,
-                ContactsContract.Contacts.PHOTO_URI,
+                ContactsContract.PhoneLookup._ID,
+                ContactsContract.PhoneLookup.LOOKUP_KEY,
+                ContactsContract.PhoneLookup.NUMBER,
+                ContactsContract.PhoneLookup.DISPLAY_NAME,
+                ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI,
         };
         Cursor cur = getActivity().getContentResolver().query(lookupUri, mPhoneNumberProjection, null, null, null);
-        String[] values = {null, null};
+        String[] values = {null, null, null, null};
+        String name = null, puri = null, uri = null;
+
         try {
             if (cur.moveToFirst()) {
-                values[0] = cur.getString(2);
-                values[1] = cur.getString(3);
+                do {
+                    name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                    puri = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
+
+                    long id = cur.getLong(cur.getColumnIndex(ContactsContract.Contacts._ID));
+                    String key = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
+                    uri = ContactsContract.Contacts.getLookupUri(id, key).toString();
+
+                    if (name != null) break;
+                } while (cur.moveToNext());
             }
         } finally {
+            values[0] = name;
+            values[1] = puri;
+            values[2] = uri;
             if (cur != null)
                 cur.close();
         }
@@ -135,16 +151,15 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
         try {
             Cursor cursor = cursorAdapter.getCursor();
             long phoneAccount = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID));
-            if(phoneAccount == -1) deviceNum = 0;
-        } catch (Exception e){
+            if (phoneAccount == -1) deviceNum = 0;
+        } catch (Exception e) {
             deviceNum = 0;
-        }
-        finally {
+        } finally {
             deviceNum = deviceNum + 1;
         }
 
-        if(simSlots > 1)
-            title.setText("SIM " + deviceNum +": " + this.phoneNumber);
+        if (simSlots > 1)
+            title.setText("SIM " + deviceNum + ": " + this.phoneNumber);
         else title.setText(this.phoneNumber);
 
 //        Bundle extras = this.get;
@@ -162,12 +177,14 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
         ImageView addContactIconField = (ImageView) view.findViewById(R.id.addContactIcon);
         CardView newMessageField = (CardView) view.findViewById(R.id.newMessage);
         CardView callField = (CardView) view.findViewById(R.id.call);
+        CardView deleteField = (CardView) view.findViewById(R.id.delete);
 
         if (this.userName == null || this.userName.length() == 0) {
             // userName.setText(this.phoneNumber);
             userName.setVisibility(View.GONE);
         } else {
             userName.setText(this.userName);
+            userName.setVisibility(View.VISIBLE);
             addContactIconField.setImageResource(R.drawable.ic_edit_black_24dp);
         }
 
@@ -201,12 +218,13 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
         });
 
 
-        addContactField.setTag(this.phoneNumber);
+        String selectedContactUri = values[2];
+        addContactField.setTag(selectedContactUri);
         addContactField.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String phNumber = (String) v.getTag();
-                addContact(phNumber);
+                String selectedContactUri = (String) v.getTag();
+                addContact(selectedContactUri);
             }
         });
         newMessageField.setTag(this.phoneNumber);
@@ -227,6 +245,15 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
             }
         });
 
+        deleteField.setTag(this.phoneNumber);
+        deleteField.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                String phNumber = (String) v.getTag();
+                deleteAllCallLog(phNumber);
+            }
+        });
+
         showCallDetailsLogs();
         return dialog;
     }
@@ -243,18 +270,54 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
         startActivity(intent);
     }
 
-    private void addContact(String phoneNumber) {
-        Intent createIntent;
+    public void deleteAllCallLog(final String number) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setCancelable(true);
+        builder.setTitle("Deletion confirmation!");
+        builder.setMessage("Please confirm to delete all the call log entries for " + number + ".");
+        builder.setPositiveButton("Confirm",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        getActivity().getContentResolver().delete(CallLog.Calls.CONTENT_URI,
+                                CallLog.Calls.NUMBER + " = ? ", new String[]{number});
+                        mBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+                    }
+                });
+        builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
+            @Override
+            public void onShow(DialogInterface arg0) {
+                AlertDialog dialog = (AlertDialog) arg0;
+                dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.colorBackspace, null));
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.colorMissedCall, null));
+            }
+        });
+        dialog.show();
+    }
+
+    private void addContact(String selectedContactUri) {
+
         if (phoneNumber.length() > 0) {
-            createIntent = new Intent(
-                    ContactsContract.Intents.SHOW_OR_CREATE_CONTACT,
-                    Uri.fromParts("tel", phoneNumber, null));
-            createIntent.putExtra(ContactsContract.Intents.EXTRA_FORCE_CREATE, true);
-        } else {
-            createIntent = new Intent(Intent.ACTION_INSERT);
-            createIntent.setType(ContactsContract.Contacts.CONTENT_TYPE);
+
+            Intent createIntent;
+
+            if (selectedContactUri != null) {
+                createIntent = new Intent(Intent.ACTION_EDIT);
+                createIntent.setDataAndType(Uri.parse(selectedContactUri), ContactsContract.Contacts.CONTENT_ITEM_TYPE);
+            } else {
+                createIntent = new Intent(ContactsContract.Intents.Insert.ACTION);
+                createIntent.setType(ContactsContract.RawContacts.CONTENT_TYPE);
+            }
+
+            startActivity(createIntent);
         }
-        startActivity(createIntent);
     }
 
     @Override

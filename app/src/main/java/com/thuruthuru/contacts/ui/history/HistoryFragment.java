@@ -10,9 +10,12 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.MatrixCursor;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.CallLog;
+import android.provider.ContactsContract;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 
@@ -53,6 +56,8 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
             CallLog.Calls.PHONE_ACCOUNT_ID,
     };
 
+    private static final String[] R_FROM_COLUMN = new String[]{"repeated_calls"};
+
     private static final int[] TO_IDS = {
             0,
             R.id.displayName,
@@ -60,7 +65,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
             0,
             R.id.callTime,
             0,
-            0
+            0,
     };
 
 
@@ -88,7 +93,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
     private ListView callList;
 
     // An adapter that binds the result Cursor to the ListView
-    private SimpleCursorAdapter cursorAdapter;
+    private CustomAdapter cursorAdapter;
 
     // Defines the text expression
     @SuppressLint("InlinedApi")
@@ -122,10 +127,10 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         LoaderManager.getInstance(this).restartLoader(0, null, this);
     }
 
-    private int getSimSlots(){
+    private int getSimSlots() {
         SharedPreferences sharedPref = getActivity().getSharedPreferences("UserInfo", Context.MODE_PRIVATE);
         int simSlots = sharedPref.getInt("simSlots", -1);
-        if(simSlots == -1){
+        if (simSlots == -1) {
             TelephonyManager manager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
             int slots = manager.getPhoneCount();
             SharedPreferences.Editor editor = sharedPref.edit();
@@ -138,13 +143,16 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
     private void showCallLogs() {
         // Gets the ListView from the View list of the parent activity
         simSlots = getSimSlots();
+        boolean isCallGroup = isCallGrouped();
+
         cursorAdapter = new CustomAdapter(
                 getActivity(),
                 R.layout.recent_contact_item,
                 null,
                 FROM_COLUMNS,
                 TO_IDS, 0,
-                simSlots);
+                simSlots,
+                isCallGroup);
         callList.setAdapter(cursorAdapter);
         callList.setOnItemClickListener(this);
 
@@ -180,47 +188,26 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
 
     @Override
     public void onItemClick(AdapterView<?> parent, View item, int position, long rowID) {
-//        String[] strFields = {android.provider.CallLog.Calls._ID,
-//                android.provider.CallLog.Calls.NUMBER,
-//                android.provider.CallLog.Calls.CACHED_NAME,};
-//        String strOrder = android.provider.CallLog.Calls.DATE + " DESC";
-//        // Make you have call logs permissions
-//        // if your os is 6.0 get call log permission at runtime.
-//        final Cursor cursorCall = getActivity().getContentResolver().query(
-//                android.provider.CallLog.Calls.CONTENT_URI, strFields,
-//                null, null, strOrder);
-//
-//        AlertDialog.Builder builder = new AlertDialog.Builder(
-//                getActivity());
-//        builder.setTitle("Pick a contact");
-//        builder.setCursor(cursorCall, null,
-//                android.provider.CallLog.Calls.CACHED_NAME);
-//        builder.create().show();
 
-
-        // Get the Cursor
         Cursor cursor = ((SimpleCursorAdapter) parent.getAdapter()).getCursor();
-        // Move to the selected contact
         cursor.moveToPosition(position);
-        // Get the _ID value
         String phoneNumber = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
-        /*
-         * You can use contactUri as the content URI for retrieving
-         * the details for a contact.
-         */
-
-//        Intent intent = new Intent(getActivity(), CallDetailFragment.class);
-//        intent.putExtra("phoneNumber", phoneNumber);
-//        startActivity(intent);
 
         // display sheet
         CallDetailFragment fragment = new CallDetailFragment(phoneNumber, simSlots);
         fragment.show(getActivity().getSupportFragmentManager(), fragment.getTag());
     }
 
+    private boolean isCallGrouped() {
+        SharedPreferences sharedPref = getActivity().getSharedPreferences("UserInfo", Context.MODE_PRIVATE);
+        boolean isCallGroup = sharedPref.getBoolean("call_group", true);
+        return isCallGroup;
+    }
+
     @Override
     public void onResume() {
         super.onResume();
+        cursorAdapter.isCallGroup = isCallGrouped();
         LoaderManager.getInstance(this).restartLoader(0, null, this);
     }
 
@@ -233,6 +220,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
 
         selectionArgs[0] = "%" + searchString + "%";
         selectionArgs[1] = "%" + searchString + "%";
+
         // Starts the query
         return new CursorLoader(
                 getActivity(),
@@ -247,7 +235,15 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
         // Put the result Cursor in the adapter for the ListView
-        cursorAdapter.swapCursor(cursor);
+
+        boolean isCallGroup = isCallGrouped();
+        if (isCallGroup) {
+            MatrixCursor newCursor = getAggregatedCursor(cursor);
+            cursorAdapter.swapCursor(newCursor);
+        } else {
+            MatrixCursor newCursor = getNewCursor(cursor);
+            cursorAdapter.swapCursor(newCursor);
+        }
     }
 
     @Override
@@ -255,5 +251,147 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         // Delete the reference to the existing Cursor
         cursorAdapter.swapCursor(null);
 
+    }
+
+    private MatrixCursor getAggregatedCursor(Cursor cursor) {
+        String[] PROJECTION_1 = new String[PROJECTION.length + R_FROM_COLUMN.length];
+
+        List<String> list = new ArrayList<String>(Arrays.asList(PROJECTION)); //returns a list view of an array
+        list.addAll(Arrays.asList(R_FROM_COLUMN));
+        list.toArray(PROJECTION_1);
+
+        MatrixCursor newCursor = new MatrixCursor(PROJECTION_1); // Same projection used in loader
+        if (cursor.moveToFirst()) {
+
+            int repeatedCalls = 1;
+            String id = cursor.getString(0);
+            String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
+            String type = cursor.getString(cursor.getColumnIndex(CallLog.Calls.TYPE));
+            String simSlot = cursor.getString(cursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID));
+            String[] values = getDisplayName(number);
+            String name = values[0] != null ? values[0] : number;
+            String nameNull = values[0];
+            String photoUri = values[1];
+            String date = cursor.getString(cursor.getColumnIndex(CallLog.Calls.DATE));
+
+            String newEntry = name + type + simSlot;
+
+            while (cursor.moveToNext()) {
+                String number1 = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
+                String type1 = cursor.getString(cursor.getColumnIndex(CallLog.Calls.TYPE));
+                String simSlot1 = cursor.getString(cursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID));
+
+                String[] values1 = getDisplayName(number1);
+                String name1 = values1[0] != null ? values1[0] : number1;
+                String currentLog = name1 + type1 + simSlot1;
+
+                if (newEntry.equalsIgnoreCase(currentLog)) {
+                    repeatedCalls++;
+                } else {
+                    newCursor.addRow(new Object[]{
+                                    id,
+                                    photoUri,
+                                    nameNull == null ? null : name,
+                                    number,
+                                    type,
+                                    date,
+                                    -1,
+                                    simSlot,
+                                    repeatedCalls
+                            }
+                    );
+
+                    id = cursor.getString(0);
+                    number = number1;
+                    type = type1;
+                    simSlot = simSlot1;
+                    values1 = getDisplayName(number1);
+                    name = values1[0] != null ? values1[0] : number1;
+                    nameNull = values1[0];
+                    photoUri = values1[1];
+                    date = cursor.getString(cursor.getColumnIndex(CallLog.Calls.DATE));
+                    repeatedCalls = 1;
+                    newEntry = currentLog;
+                }
+            }
+            newCursor.addRow(new Object[]{
+                            id,
+                            photoUri,
+                            nameNull == null ? null : name,
+                            number,
+                            type,
+                            date,
+                            -1,
+                            simSlot,
+                            repeatedCalls
+                    }
+            );
+        }
+        return newCursor;
+    }
+
+
+    private MatrixCursor getNewCursor(Cursor cursor) {
+
+        MatrixCursor newCursor = new MatrixCursor(PROJECTION); // Same projection used in loader
+        if (cursor.moveToFirst()) {
+            do {
+                String id = cursor.getString(0);
+                String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
+                String type = cursor.getString(cursor.getColumnIndex(CallLog.Calls.TYPE));
+                String simSlot = cursor.getString(cursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID));
+                String[] values = getDisplayName(number);
+                String name = values[0] != null ? values[0] : number;
+                String nameNull = values[0];
+                String photoUri = values[1];
+                String date = cursor.getString(cursor.getColumnIndex(CallLog.Calls.DATE));
+                String duration = cursor.getString(cursor.getColumnIndex(CallLog.Calls.DURATION));
+
+                newCursor.addRow(new Object[]{
+                                id,
+                                photoUri,
+                                nameNull == null ? null : name,
+                                number,
+                                type,
+                                date,
+                                duration,
+                                simSlot,
+                        }
+                );
+
+            } while (cursor.moveToNext());
+        }
+        return newCursor;
+    }
+
+    public String[] getDisplayName(String number) {
+        /// number is the phone number
+        Uri lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
+                Uri.encode(number));
+
+        String[] mPhoneNumberProjection = {
+                ContactsContract.PhoneLookup._ID,
+                ContactsContract.PhoneLookup.NUMBER,
+                ContactsContract.PhoneLookup.DISPLAY_NAME,
+                ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI,
+        };
+        Cursor cur = getActivity().getContentResolver().query(lookupUri, mPhoneNumberProjection, null, null, null);
+        String[] values = {null, null};
+        try {
+            if (cur.moveToFirst()) {
+                String name = null, puri = null;
+                do {
+                    name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                    puri = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
+                    if (name != null) break;
+                } while (cur.moveToNext());
+                values[0] = name;
+                values[1] = puri;
+            }
+        } finally {
+            if (cur != null)
+                cur.close();
+        }
+        return values;
     }
 }

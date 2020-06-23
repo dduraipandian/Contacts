@@ -11,4 +11,5 @@
     <color name="colorPhoneNumber">#248f24</color>
     <color name="colorBackspace">#b3b3b3</color>
     <color name="colorMissedCall">#ff6666</color>
+    <color name="colorDelete">#D55454</color>
 </resources>

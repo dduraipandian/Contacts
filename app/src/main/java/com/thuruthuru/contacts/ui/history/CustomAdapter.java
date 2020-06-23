@@ -1,6 +1,7 @@
 package com.thuruthuru.contacts.ui.history;
 
 import android.Manifest;
+import android.content.SharedPreferences;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
 import android.text.format.DateUtils;
@@ -33,6 +34,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
     private static Cursor cursor;
     private int layout;
     private int simSlots;
+    public static boolean isCallGroup;
     private final int missedCall = android.R.drawable.sym_call_missed;
     private long LIMIT_IN_MILL_3DAY = 3 * 24 * 60 * 60 * 1000;
 
@@ -41,18 +43,25 @@ public class CustomAdapter extends SimpleCursorAdapter {
     int SECONDS_IN_HOUR = (MINUTES_IN_HOURS * SECONDS_IN_MINUTE);
 
 
-    public CustomAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flag, int simSlots) {
+    public CustomAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flag, int simSlots, boolean isCallGroup) {
         super(context, layout, c, from, to, flag);
         cursorInflater = LayoutInflater.from(context);
         cursor = c;
         this.context = context;
         this.layout = layout;
         this.simSlots = simSlots;
+        this.isCallGroup = isCallGroup;
     }
 
     @Override
     public View newView(Context context, Cursor cursor, ViewGroup parent) {
         return cursorInflater.inflate(layout, null);
+    }
+
+    private boolean isCallGrouped() {
+        SharedPreferences sharedPref = this.context.getSharedPreferences("UserInfo", Context.MODE_PRIVATE);
+        boolean isCallGroup = sharedPref.getBoolean("call_group", true);
+        return isCallGroup;
     }
 
     private void getCurrentCursor(View v, Cursor cursor) {
@@ -99,6 +108,16 @@ public class CustomAdapter extends SimpleCursorAdapter {
         return resourceView;
     }
 
+    private String getDisplayName(){
+        String name = getCursor().getString(getCursor().getColumnIndex("name"));
+        return name;
+    }
+
+    private String getPhotoURI(){
+        String photoURI = getCursor().getString(getCursor().getColumnIndex("photo_uri"));
+        return photoURI;
+    }
+
     private String getFormattedCallDuration(long callDuration) {
         int inHours = (int) callDuration / SECONDS_IN_HOUR;
         int inMinutes = (int) callDuration / SECONDS_IN_MINUTE;
@@ -119,31 +138,6 @@ public class CustomAdapter extends SimpleCursorAdapter {
         return formattedDuration;
     }
 
-    public String[] getDisplayName(String number) {
-        /// number is the phone number
-        Uri lookupUri = Uri.withAppendedPath(ContactsContract.CommonDataKinds.Phone.CONTENT_FILTER_URI,
-                Uri.encode(number));
-
-        String[] mPhoneNumberProjection = {
-                ContactsContract.Contacts._ID,
-                ContactsContract.CommonDataKinds.Phone.NUMBER,
-                ContactsContract.Contacts.DISPLAY_NAME,
-                ContactsContract.Contacts.PHOTO_THUMBNAIL_URI,
-        };
-        Cursor cur = context.getContentResolver().query(lookupUri, mPhoneNumberProjection, null, null, null);
-        String[] values = {null, null};
-        try {
-            if (cur.moveToFirst()) {
-                values[0] = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                values[1] = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
-            }
-        } finally {
-            if (cur != null)
-                cur.close();
-        }
-        return values;
-    }
-
     @Override
     public void bindView(View view, Context context, final Cursor cursor) {
         // R.layout.list_row is your xml layout for each row
@@ -159,31 +153,42 @@ public class CustomAdapter extends SimpleCursorAdapter {
         TextView callTimeField = (TextView) findViewById(view, R.id.callTime, cursor);
         TextView callDurationField = (TextView) findViewById(view, R.id.callDuration, cursor);
         TextView simField = (TextView) findViewById(view, R.id.sim, cursor);
+        TextView repeatedCallsField = (TextView) findViewById(view, R.id.repeatedCalls, cursor);
 
         long callTime = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
         long callDuration = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DURATION));
         String phoneNumber = getPhoneNumber();
-        String[] values = getDisplayName(phoneNumber);
 
         int deviceNum = 0;
         try {
             long phoneAccount = cursor.getInt(cursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID));
-            if(phoneAccount == -1) deviceNum = 0;
-        } catch (Exception e){
+            if (phoneAccount == -1) deviceNum = 0;
+        } catch (Exception e) {
             deviceNum = 0;
-        }
-        finally {
+        } finally {
             deviceNum = deviceNum + 1;
         }
 
-        if(this.simSlots > 1)
-            simField.setText(" SIM " + deviceNum);
-        else simField.setVisibility(View.GONE);
+        if (this.simSlots > 1)
+            simField.setText("S" + deviceNum);
+        else {
+            simField.setVisibility(View.GONE);
+        }
 
-//        Log.i(TAG, "Single or Dula Sim " + manager.getPhoneCount());
-//        Log.i(TAG, "Default device ID " + manager.getDeviceId());
-//        Log.i(TAG, "Single 1 " + manager.getDeviceId(0));
-//        Log.i(TAG, "Single 2 " + manager.getDeviceId(1));
+        if (isCallGroup) {
+            int index;
+            try {
+                index = cursor.getColumnIndexOrThrow("repeated_calls");
+                int repeatedCalls = cursor.getInt(index);
+                if (repeatedCalls > 1) {
+                    repeatedCallsField.setVisibility(View.VISIBLE);
+                    repeatedCallsField.setText("(" + repeatedCalls + ")");
+                }
+                else repeatedCallsField.setVisibility(View.GONE);
+            } catch (Exception e) {
+                repeatedCallsField.setVisibility(View.GONE);
+            }
+        } else repeatedCallsField.setVisibility(View.GONE);
 
         String callRelativeTime = DateUtils.getRelativeDateTimeString(context, callTime,
                 DateUtils.MINUTE_IN_MILLIS,
@@ -200,25 +205,29 @@ public class CustomAdapter extends SimpleCursorAdapter {
             // TextView phoneNumberField = (TextView) findViewById(view, R.id.phoneNumber, cursor);
             // phoneNumberField.setTextColor(context.getResources().getColor(R.color.colorMissedCall, null));
             phTypeImgField.setColorFilter(context.getResources().getColor(R.color.colorMissedCall, null));
-        } else{
+        } else {
             phTypeImgField.setColorFilter(null);
         }
 
-        String callRelativeDuration = getFormattedCallDuration(callDuration);
+        if (callDuration == -1) {
+            callDurationField.setVisibility(View.GONE);
+        } else {
+            String callRelativeDuration = getFormattedCallDuration(callDuration);
+            callDurationField.setText(callRelativeDuration + ",");
+            callDurationField.setVisibility(View.VISIBLE);
+        }
 
-        callDurationField.setText(callRelativeDuration + ",");
+        String displayName = getDisplayName();
+        String photoUri = getPhotoURI();
 
-        String displayName = values[0];
-        String photoUri = values[1];
-
-        if(displayName == null || displayName.length() == 0){
-            displayNameField.setVisibility(View.GONE );
-        } else{
-            displayNameField.setVisibility(View.VISIBLE );
+        if (displayName == null || displayName.length() == 0) {
+            displayNameField.setVisibility(View.GONE);
+        } else {
+            displayNameField.setVisibility(View.VISIBLE);
             displayNameField.setText(displayName);
         }
 
-        if(photoUri != null && photoUri.length() > 0){
+        if (photoUri != null && photoUri.length() > 0) {
             Uri myUri = Uri.parse(photoUri);
             profileField.setImageURI(myUri);
         }

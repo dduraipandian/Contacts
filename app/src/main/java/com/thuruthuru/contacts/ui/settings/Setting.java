@@ -24,7 +24,7 @@ public class Setting extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         setContentView(R.layout.settings);
 
-//        Switch aSwitch = (Switch) findViewById(R.id.switch1);
+        Switch callGroupSw = (Switch) findViewById(R.id.call_group);
         CheckBox phoneCheckbox = (CheckBox) findViewById(R.id.phone);
         CheckBox simCheckbox = (CheckBox) findViewById(R.id.sim);
         CheckBox emailCheckbox = (CheckBox) findViewById(R.id.email);
@@ -32,18 +32,19 @@ public class Setting extends AppCompatActivity {
 
         SharedPreferences sharedPref = getSharedPreferences("UserInfo", Context.MODE_PRIVATE);
 
-//        aSwitch.setChecked(sharedPref.getBoolean("show_contact", true));
+        callGroupSw.setChecked(sharedPref.getBoolean("show_contact", true));
         phoneCheckbox.setChecked(sharedPref.getBoolean("phone_contact", true));
         simCheckbox.setChecked(sharedPref.getBoolean("sim_contact", true));
         emailCheckbox.setChecked(sharedPref.getBoolean("mail_contact", true));
         whatsppCheckbox.setChecked(sharedPref.getBoolean("whatsapp_contact", false));
+        callGroupSw.setChecked(sharedPref.getBoolean("call_group", true));
 
 
-//        aSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-//                savePreference("show_contact", isChecked);
-//            }
-//        });
+        callGroupSw.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                savePreference("call_group", isChecked);
+            }
+        });
 
         phoneCheckbox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
