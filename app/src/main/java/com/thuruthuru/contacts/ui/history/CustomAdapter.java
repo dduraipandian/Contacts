@@ -3,7 +3,6 @@ package com.thuruthuru.contacts.ui.history;
 import android.Manifest;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
-import android.telephony.TelephonyManager;
 import android.text.format.DateUtils;
 import android.content.Context;
 import android.content.Intent;

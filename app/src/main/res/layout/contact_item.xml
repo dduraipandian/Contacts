@@ -124,7 +124,7 @@
                     android:clickable="true"
                     android:background="#FFF"
                     android:focusable="false"
-                    android:src="@android:drawable/stat_sys_phone_call"
+                    android:src="@drawable/ic_call_black_24dp"
                     android:tint="@color/colorPhoneNumber" />
 
             </LinearLayout>

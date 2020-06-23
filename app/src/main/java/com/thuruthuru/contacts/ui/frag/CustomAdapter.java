@@ -63,6 +63,11 @@ public class CustomAdapter extends SimpleCursorAdapter {
         return starred.equals("1");
     }
 
+    private String getPhotoUri() {
+        String photoUri = getCursor().getString(getCursor().getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
+        return photoUri;
+    }
+
     private int phoneTypeResource() {
         String type = getCursor().getString(4);
         int phResource;
@@ -93,6 +98,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
         // R.layout.list_row is your xml layout for each row
         super.bindView(view, context, cursor);
         ImageButton callField = (ImageButton) findViewById(view, R.id.call, cursor);
+        ImageView profileField = (ImageView) findViewById(view, R.id.icon, cursor);
         ImageView addFavField = (ImageView) findViewById(view, R.id.addFav, cursor);
         ImageView newMessageField = (ImageView) findViewById(view, R.id.newMessage, cursor);
         ImageView phTypeImgField = (ImageView) findViewById(view, R.id.phTypeImage, cursor);
@@ -100,6 +106,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
         int typeRes = phoneTypeResource();
 
         boolean starred = isFavorite();
+        String photoUri = getPhotoUri();
         int colorR = starred ? R.color.colorFabFG : R.color.colorFabBG;
         addFavField.setColorFilter(context.getResources().getColor(colorR, null));
         phTypeImgField.setImageResource(typeRes);
@@ -113,6 +120,13 @@ public class CustomAdapter extends SimpleCursorAdapter {
                 composeSmsMessage(phoneNumber);
             }
         });
+
+        if(photoUri != null && photoUri.length() > 0){
+            Uri myUri = Uri.parse(photoUri);
+            profileField.setImageURI(myUri);
+        } else{
+            profileField.setImageResource(R.drawable.ic_person_24dp);
+        }
 
         if (DISABLE_CALL) {
             callField.setVisibility(View.GONE);

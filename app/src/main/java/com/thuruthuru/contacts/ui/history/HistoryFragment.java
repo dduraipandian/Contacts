@@ -7,30 +7,23 @@ import java.util.List;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.CallLog;
-import android.provider.ContactsContract;
 import android.telephony.TelephonyManager;
-import android.text.Editable;
 import android.text.TextUtils;
-import android.text.TextWatcher;
+
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.core.app.ActivityCompat;
 import androidx.cursoradapter.widget.SimpleCursorAdapter;
 import androidx.fragment.app.Fragment;
@@ -61,7 +54,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
     };
 
     private static final int[] TO_IDS = {
-            R.id.icon,
+            0,
             R.id.displayName,
             R.id.phoneNumber,
             0,
@@ -115,24 +108,6 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         em.setText("No new call details to display");
         callList.setEmptyView(em);
 
-//        EditText searchField = (EditText) root.findViewById(R.id.callSearchField);
-//
-//        searchField.addTextChangedListener(new TextWatcher() {
-//            @Override
-//            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-//            }
-//
-//            @Override
-//            public void onTextChanged(CharSequence s, int start, int before, int count) {
-//                String searchString = s.toString();
-//                onQueryTextChange(searchString);
-//            }
-//
-//            @Override
-//            public void afterTextChanged(Editable searchField) {
-//            }
-//        });
-
         return root;
     }
 
@@ -147,14 +122,22 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         LoaderManager.getInstance(this).restartLoader(0, null, this);
     }
 
+    private int getSimSlots(){
+        SharedPreferences sharedPref = getActivity().getSharedPreferences("UserInfo", Context.MODE_PRIVATE);
+        int simSlots = sharedPref.getInt("simSlots", -1);
+        if(simSlots == -1){
+            TelephonyManager manager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
+            int slots = manager.getPhoneCount();
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putInt("simSlots", slots);
+            editor.apply();
+        }
+        return simSlots;
+    }
 
     private void showCallLogs() {
         // Gets the ListView from the View list of the parent activity
-
-        TelephonyManager manager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
-
-        simSlots = manager.getPhoneCount();
-
+        simSlots = getSimSlots();
         cursorAdapter = new CustomAdapter(
                 getActivity(),
                 R.layout.recent_contact_item,
@@ -191,7 +174,8 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         boolean granted = isPermissionGranted(permission, PERMISSION_REQUEST_READ_CALL_LOG);
         boolean w_granted = isPermissionGranted(w_permission, PERMISSION_REQUEST_WRITE_CALL_LOG);
         boolean rs_granted = isPermissionGranted(rs_permission, PERMISSION_REQUEST_READ_PHONE_STATE);
-        if (granted && w_granted && rs_granted) showCallLogs();
+//        if (granted && w_granted && rs_granted) showCallLogs();
+        if (granted) showCallLogs();
     }
 
     @Override
@@ -232,6 +216,12 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         // display sheet
         CallDetailFragment fragment = new CallDetailFragment(phoneNumber, simSlots);
         fragment.show(getActivity().getSupportFragmentManager(), fragment.getTag());
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        LoaderManager.getInstance(this).restartLoader(0, null, this);
     }
 
     @Override

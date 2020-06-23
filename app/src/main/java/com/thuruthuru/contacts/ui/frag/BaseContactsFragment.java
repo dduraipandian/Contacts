@@ -4,6 +4,7 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -45,12 +46,12 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
     };
 
     private static final String order_by = Build.VERSION.SDK_INT
-                    >= Build.VERSION_CODES.HONEYCOMB ?
-    ContactsContract.Contacts.DISPLAY_NAME_PRIMARY :
-    ContactsContract.Contacts.DISPLAY_NAME + " COLLATE NOCASE ASC NULLS LAST ";
+            >= Build.VERSION_CODES.HONEYCOMB ?
+            ContactsContract.Contacts.DISPLAY_NAME_PRIMARY :
+            ContactsContract.Contacts.DISPLAY_NAME + " COLLATE NOCASE ASC NULLS LAST ";
 
 
-    private static final String ORDER_BY = "CAST( " + order_by + " as INT) COLLATE NOCASE ASC, "+ order_by +" COLLATE NOCASE ASC ";
+    private static final String ORDER_BY = "CAST( " + order_by + " as INT) COLLATE NOCASE ASC, " + order_by + " COLLATE NOCASE ASC ";
 
     @SuppressLint("InlinedApi")
     private static final String[] PROJECTION = {
@@ -73,8 +74,10 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
                     ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?" :
                     ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?";
 
-    private String SELECTION = "(" + selection_display_name + " or " +
+    private String OriginalSELECTION = "(" + selection_display_name + " or " +
             ContactsContract.CommonDataKinds.Phone.NUMBER + " LIKE ? )";
+
+    private String SELECTION = "";
 
     // Defines a variable for the search string
     private String searchString = "";
@@ -82,7 +85,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
     private String[] selectionArgs = {searchString, searchString};
 
     private static final int[] TO_IDS = {
-            R.id.icon,
+            0,
             R.id.displayName,
             0,
             R.id.phoneNumber
@@ -90,6 +93,12 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
 
     private boolean DISABLE_CALL = false;
     private boolean DISABLE_FAV = false;
+
+    private boolean showContact;
+    private boolean phoneContact;
+    private boolean simContact;
+    private boolean mailContact;
+    private boolean whatsAppContact;
 
     // The column index for the _ID column
     private static final int CONTACT_ID_INDEX = 0;
@@ -124,7 +133,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
         super.onCreate(savedInstanceState);
     }
 
-    public abstract View getCustomView(LayoutInflater inflater,ViewGroup parent, Bundle savedInstanceState);
+    public abstract View getCustomView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState);
 
     // A UI Fragment must inflate its View
     @Override
@@ -135,11 +144,11 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
 
         EditText searchField = (EditText) root.findViewById(R.id.searchField);
 
-
         if (ONLY_FAV) {
-            SELECTION = SELECTION + " and " +
-                    ContactsContract.Contacts.STARRED + " = '1' ";
+            OriginalSELECTION = OriginalSELECTION + " and " + ContactsContract.Contacts.STARRED + " = '1' ";
         }
+
+        SELECTION = getSelection();
 
         if (SEARCH_ENABLED) {
             searchField.addTextChangedListener(new TextWatcher() {
@@ -177,6 +186,61 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
         LoaderManager.getInstance(this).restartLoader(0, null, this);
     }
 
+    private String getSelection(){
+        SharedPreferences sharedPref = getActivity().getSharedPreferences("UserInfo", Context.MODE_PRIVATE);
+
+        showContact = sharedPref.getBoolean("show_contact", true);
+        phoneContact = sharedPref.getBoolean("phone_contact", true);
+        simContact = sharedPref.getBoolean("sim_contact", true);
+        mailContact = sharedPref.getBoolean("mail_contact", true);
+        whatsAppContact = sharedPref.getBoolean("whatsapp_contact", false);
+
+        String SELECTION  = OriginalSELECTION;
+
+        if (showContact){
+            SELECTION = SELECTION + " and " + ContactsContract.Contacts.HAS_PHONE_NUMBER + " != 0 and " +
+                    ContactsContract.Contacts.HAS_PHONE_NUMBER + " is not null ";
+        }
+        else{
+            SELECTION = SELECTION + " and (" + ContactsContract.Contacts.HAS_PHONE_NUMBER + " >= 0 or " +
+                    ContactsContract.Contacts.HAS_PHONE_NUMBER + " is null ) ";
+        }
+
+        String phoneSelection = "";
+
+        if (phoneContact){
+            phoneSelection += !phoneSelection.equals("") ? " and " : "";
+            phoneSelection = phoneSelection + ContactsContract.RawContacts.ACCOUNT_TYPE + " like '%account.phone' ";
+        }
+
+        if (simContact){
+            phoneSelection += !phoneSelection.equals("") ? " or " : "";
+            phoneSelection = phoneSelection + ContactsContract.RawContacts.ACCOUNT_TYPE + " like '%account.usim' ";
+        }
+
+        if (mailContact){
+            phoneSelection += !phoneSelection.equals("") ? " or " : "";
+            phoneSelection = phoneSelection + ContactsContract.RawContacts.ACCOUNT_TYPE + " = 'com.google' ";
+        }
+
+        if (whatsAppContact){
+            phoneSelection += !phoneSelection.equals("") ? " or " : "";
+            phoneSelection = phoneSelection + ContactsContract.RawContacts.ACCOUNT_TYPE + " = 'com.whatsapp' ";
+        }
+
+        if(!phoneSelection.equals("")){
+            SELECTION = SELECTION + " and (" + phoneSelection + ")";
+        }
+
+        return SELECTION;
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        SELECTION = getSelection();
+        LoaderManager.getInstance(this).restartLoader(0, null, this);
+    }
 
     private void showContacts() {
         // Gets the ListView from the View list of the parent activity
@@ -261,6 +325,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
 
         selectionArgs[0] = "%" + searchString + "%";
         selectionArgs[1] = "%" + searchString + "%";
+
         // Starts the query
         return new CursorLoader(
                 getActivity(),

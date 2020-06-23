@@ -129,7 +129,7 @@
                                 android:backgroundTint="#FFF"
                                 android:background="#FFF"
                                 android:clickable="false"
-                                android:src="@android:drawable/stat_sys_phone_call"
+                                android:src="@drawable/ic_call_black_24dp"
                                 android:tint="@color/colorPhoneNumber" />
                         </androidx.cardview.widget.CardView>
 

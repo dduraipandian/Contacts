@@ -39,7 +39,7 @@
         </activity>
         <activity
             android:name=".ui.settings.Setting"
-            android:label="About">
+            android:label="Setting">
         </activity>
     </application>
 
