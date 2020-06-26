@@ -69,16 +69,16 @@ public class CustomAdapter extends SimpleCursorAdapter {
     }
 
     private int phoneTypeResource() {
-        String type = getCursor().getString(4);
+        int type = getCursor().getInt(4);
         int phResource;
         switch (type) {
-            case "1":
+            case ContactsContract.CommonDataKinds.Phone.TYPE_HOME:
                 phResource = R.drawable.ic_home_black_24dp;
                 break;
-            case "2":
+            case ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE:
                 phResource = R.drawable.ic_phone_android_black_24dp;
                 break;
-            case "3":
+            case ContactsContract.CommonDataKinds.Phone.TYPE_WORK:
                 phResource = R.drawable.ic_business_black_24dp;
                 break;
             default:
@@ -121,10 +121,10 @@ public class CustomAdapter extends SimpleCursorAdapter {
             }
         });
 
-        if(photoUri != null && photoUri.length() > 0){
+        if (photoUri != null && photoUri.length() > 0) {
             Uri myUri = Uri.parse(photoUri);
             profileField.setImageURI(myUri);
-        } else{
+        } else {
             profileField.setImageResource(R.drawable.ic_person_24dp);
         }
 

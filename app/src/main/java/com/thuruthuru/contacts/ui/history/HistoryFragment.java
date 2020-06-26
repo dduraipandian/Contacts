@@ -2,10 +2,12 @@ package com.thuruthuru.contacts.ui.history;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -25,6 +27,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -36,11 +39,13 @@ import androidx.loader.content.Loader;
 
 import com.thuruthuru.contacts.ui.call_details.CallDetailFragment;
 import com.thuruthuru.contacts.R;
+import com.thuruthuru.contacts.ui.common.phoneContact;
 
 public class HistoryFragment extends Fragment implements AdapterView.OnItemClickListener,
         LoaderManager.LoaderCallbacks<Cursor> {
 
     private static int simSlots;
+
     @SuppressLint("InlinedApi")
     private static final String[] PROJECTION_KEYS = {
             CallLog.Calls._ID
@@ -54,6 +59,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
             CallLog.Calls.DATE,
             CallLog.Calls.DURATION,
             CallLog.Calls.PHONE_ACCOUNT_ID,
+            CallLog.Calls.IS_READ,
     };
 
     private static final String[] R_FROM_COLUMN = new String[]{"repeated_calls"};
@@ -66,6 +72,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
             R.id.callTime,
             0,
             0,
+            0
     };
 
 
@@ -79,6 +86,8 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
     private static final int PERMISSION_REQUEST_READ_CALL_LOG = 0;
     private static final int PERMISSION_REQUEST_WRITE_CALL_LOG = 1;
     private static final int PERMISSION_REQUEST_READ_PHONE_STATE = 2;
+    private static final int PERMISSION_REQUEST_READ_CONTACTS = 3;
+    private static final int PERMISSION_REQUEST_HISTORY = 4;
 
     // The column index for the CONTACT_KEY column
     private static final int CONTACT_KEY_INDEX = 1;
@@ -99,9 +108,6 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
     @SuppressLint("InlinedApi")
     private static String selection_display_name = CallLog.Calls.CACHED_NAME + " LIKE ?";
 
-    private String SELECTION = "(" + selection_display_name + " or " +
-            CallLog.Calls.NUMBER + " LIKE ? )";
-
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_history, container, false);
@@ -119,28 +125,6 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
     @SuppressLint("ResourceType")
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        isPermissionGrantedCallLogs();
-    }
-
-    public void onQueryTextChange(String newText) {
-        searchString = !TextUtils.isEmpty(newText) ? newText : "";
-        LoaderManager.getInstance(this).restartLoader(0, null, this);
-    }
-
-    private int getSimSlots() {
-        SharedPreferences sharedPref = getActivity().getSharedPreferences("UserInfo", Context.MODE_PRIVATE);
-        int simSlots = sharedPref.getInt("simSlots", -1);
-        if (simSlots == -1) {
-            TelephonyManager manager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
-            int slots = manager.getPhoneCount();
-            SharedPreferences.Editor editor = sharedPref.edit();
-            editor.putInt("simSlots", slots);
-            editor.apply();
-        }
-        return simSlots;
-    }
-
-    private void showCallLogs() {
         // Gets the ListView from the View list of the parent activity
         simSlots = getSimSlots();
         boolean isCallGroup = isCallGrouped();
@@ -156,34 +140,81 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         callList.setAdapter(cursorAdapter);
         callList.setOnItemClickListener(this);
 
-        // Initializes the loader
+        isPermissionGrantedCallLogs(PERMISSION_REQUEST_HISTORY);
+    }
+
+    private int getSimSlots() {
+        SharedPreferences sharedPref = getActivity().getSharedPreferences("UserInfo", Context.MODE_PRIVATE);
+        int simSlots = sharedPref.getInt("simSlots", -1);
+
+        if (simSlots == -1) {
+            TelephonyManager manager = (TelephonyManager) getActivity().getSystemService(Context.TELEPHONY_SERVICE);
+            int slots = manager.getPhoneCount();
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putInt("simSlots", slots);
+            editor.apply();
+        }
+        return simSlots;
+    }
+
+    private void showCallLogs() {
         LoaderManager.getInstance(this).initLoader(0, null, this);
     }
 
-    private boolean isPermissionGranted(@NonNull String permission, int requestCode) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Context context = getContext().getApplicationContext();
-            int perm = ActivityCompat.checkSelfPermission(context, permission);
-
-            if (perm == PackageManager.PERMISSION_GRANTED) {
-                return true;
-            } else {
-                requestPermissions(new String[]{permission}, requestCode);
-                return false;
-            }
-        } else return true;
+    @Override
+    public void onStop() {
+        super.onStop();
+        clearMissedCalls();
     }
 
-    private void isPermissionGrantedCallLogs() {
-        String permission = Manifest.permission.READ_CALL_LOG;
-        String w_permission = Manifest.permission.WRITE_CALL_LOG;
-        String rs_permission = Manifest.permission.READ_PHONE_STATE;
+    private void clearMissedCalls() {
+        ContentValues values = new ContentValues();
+        values.put(CallLog.Calls.NEW, 0);
+        values.put(CallLog.Calls.IS_READ, 1);
+        StringBuilder where = new StringBuilder();
+        where.append(CallLog.Calls.NEW);
+        where.append(" = 1 AND ");
+        where.append(CallLog.Calls.TYPE);
+        where.append(" = ?");
+        getActivity().getContentResolver().update(CallLog.Calls.CONTENT_URI, values, where.toString(),
+                new String[]{Integer.toString(CallLog.Calls.MISSED_TYPE)});
+    }
 
-        boolean granted = isPermissionGranted(permission, PERMISSION_REQUEST_READ_CALL_LOG);
-        boolean w_granted = isPermissionGranted(w_permission, PERMISSION_REQUEST_WRITE_CALL_LOG);
-        boolean rs_granted = isPermissionGranted(rs_permission, PERMISSION_REQUEST_READ_PHONE_STATE);
-//        if (granted && w_granted && rs_granted) showCallLogs();
-        if (granted) showCallLogs();
+    private boolean isPermissionGranted(@NonNull String permission, int requestCode) {
+        Context context = getContext().getApplicationContext();
+        int perm = ActivityCompat.checkSelfPermission(context, permission);
+
+        if (perm == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            requestPermissions(new String[]{permission}, requestCode);
+            return false;
+        }
+    }
+
+    private void isPermissionGrantedCallLogs(int requestCode) {
+        String permission = Manifest.permission.READ_CALL_LOG;
+        String rs_permission = Manifest.permission.READ_PHONE_STATE;
+        String rc_permission = Manifest.permission.READ_CONTACTS;
+        String w_permission = Manifest.permission.WRITE_CALL_LOG;
+
+        String[] permissions = {permission, rs_permission, rc_permission, w_permission};
+
+        boolean granted = true;
+        for (String perms : permissions) {
+            Context context = getContext().getApplicationContext();
+            int perm = ActivityCompat.checkSelfPermission(context, perms);
+
+            if (perm == PackageManager.PERMISSION_GRANTED)
+                granted = granted && true;
+            else
+                granted = granted && false;
+        }
+
+        if (!granted)
+            requestPermissions(permissions, PERMISSION_REQUEST_HISTORY);
+        else
+            showCallLogs();
     }
 
     @Override
@@ -205,10 +236,10 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
     }
 
     @Override
-    public void onResume() {
-        super.onResume();
+    public void onStart() {
+        super.onStart();
         cursorAdapter.isCallGroup = isCallGrouped();
-        LoaderManager.getInstance(this).restartLoader(0, null, this);
+        isPermissionGrantedCallLogs(PERMISSION_REQUEST_HISTORY);
     }
 
     @Override
@@ -222,7 +253,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         selectionArgs[1] = "%" + searchString + "%";
 
         // Starts the query
-        return new CursorLoader(
+        CursorLoader cursorLoader = new CursorLoader(
                 getActivity(),
                 CallLog.Calls.CONTENT_URI,
                 PROJECTION,
@@ -230,6 +261,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
                 null,
                 ORDER_BY
         );
+        return cursorLoader;
     }
 
     @Override
@@ -237,13 +269,8 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         // Put the result Cursor in the adapter for the ListView
 
         boolean isCallGroup = isCallGrouped();
-        if (isCallGroup) {
-            MatrixCursor newCursor = getAggregatedCursor(cursor);
-            cursorAdapter.swapCursor(newCursor);
-        } else {
-            MatrixCursor newCursor = getNewCursor(cursor);
-            cursorAdapter.swapCursor(newCursor);
-        }
+        MatrixCursor newCursor = isCallGroup ? getAggregatedCursor(cursor) : getNewCursor(cursor);
+        cursorAdapter.swapCursor(newCursor);
     }
 
     @Override
@@ -264,134 +291,147 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         if (cursor.moveToFirst()) {
 
             int repeatedCalls = 1;
-            String id = cursor.getString(0);
-            String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
-            String type = cursor.getString(cursor.getColumnIndex(CallLog.Calls.TYPE));
-            String simSlot = cursor.getString(cursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID));
-            String[] values = getDisplayName(number);
-            String name = values[0] != null ? values[0] : number;
-            String nameNull = values[0];
-            String photoUri = values[1];
-            String date = cursor.getString(cursor.getColumnIndex(CallLog.Calls.DATE));
 
-            String newEntry = name + type + simSlot;
+            HashMap<String, String> previousDataHash = getDataFromCursor(cursor);
 
             while (cursor.moveToNext()) {
-                String number1 = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
-                String type1 = cursor.getString(cursor.getColumnIndex(CallLog.Calls.TYPE));
-                String simSlot1 = cursor.getString(cursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID));
+                String number = previousDataHash.get("number");
+                String name = previousDataHash.getOrDefault("name", number);
+                String type = previousDataHash.get("type");
+                String simSlot = previousDataHash.get("simSlot");
 
-                String[] values1 = getDisplayName(number1);
-                String name1 = values1[0] != null ? values1[0] : number1;
-                String currentLog = name1 + type1 + simSlot1;
+                String newEntry = name + type + simSlot;
+
+                HashMap<String, String> currentDataHash = getDataFromCursor(cursor);
+                String currentNumber = currentDataHash.get("number");
+                String CurrentName = currentDataHash.getOrDefault("name", currentNumber);
+                String currentType = currentDataHash.get("type");
+                String currentSimSlot = currentDataHash.get("simSlot");
+
+                String currentLog = CurrentName + currentType + currentSimSlot;
 
                 if (newEntry.equalsIgnoreCase(currentLog)) {
                     repeatedCalls++;
                 } else {
-                    newCursor.addRow(new Object[]{
-                                    id,
-                                    photoUri,
-                                    nameNull == null ? null : name,
-                                    number,
-                                    type,
-                                    date,
-                                    -1,
-                                    simSlot,
-                                    repeatedCalls
-                            }
-                    );
+                    Object[] newData = getNewCallData(previousDataHash, repeatedCalls);
+                    newCursor.addRow(newData);
 
-                    id = cursor.getString(0);
-                    number = number1;
-                    type = type1;
-                    simSlot = simSlot1;
-                    values1 = getDisplayName(number1);
-                    name = values1[0] != null ? values1[0] : number1;
-                    nameNull = values1[0];
-                    photoUri = values1[1];
-                    date = cursor.getString(cursor.getColumnIndex(CallLog.Calls.DATE));
                     repeatedCalls = 1;
-                    newEntry = currentLog;
+                    previousDataHash = currentDataHash;
                 }
             }
-            newCursor.addRow(new Object[]{
-                            id,
-                            photoUri,
-                            nameNull == null ? null : name,
-                            number,
-                            type,
-                            date,
-                            -1,
-                            simSlot,
-                            repeatedCalls
-                    }
-            );
+
+            Object[] newData = getNewCallData(previousDataHash, repeatedCalls);
+            newCursor.addRow(newData);
         }
         return newCursor;
     }
 
 
     private MatrixCursor getNewCursor(Cursor cursor) {
-
         MatrixCursor newCursor = new MatrixCursor(PROJECTION); // Same projection used in loader
         if (cursor.moveToFirst()) {
             do {
-                String id = cursor.getString(0);
-                String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
-                String type = cursor.getString(cursor.getColumnIndex(CallLog.Calls.TYPE));
-                String simSlot = cursor.getString(cursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID));
-                String[] values = getDisplayName(number);
-                String name = values[0] != null ? values[0] : number;
-                String nameNull = values[0];
-                String photoUri = values[1];
-                String date = cursor.getString(cursor.getColumnIndex(CallLog.Calls.DATE));
-                String duration = cursor.getString(cursor.getColumnIndex(CallLog.Calls.DURATION));
-
-                newCursor.addRow(new Object[]{
-                                id,
-                                photoUri,
-                                nameNull == null ? null : name,
-                                number,
-                                type,
-                                date,
-                                duration,
-                                simSlot,
-                        }
-                );
+                HashMap<String, String> values = getDataFromCursor(cursor);
+                Object[] newData = newCursorDataObject(values);
+                newCursor.addRow(newData);
 
             } while (cursor.moveToNext());
         }
         return newCursor;
     }
 
-    public String[] getDisplayName(String number) {
-        /// number is the phone number
-        Uri lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
-                Uri.encode(number));
+    private Object[] getNewCallData(HashMap<String, String> previousDataHash,
+                                    int repeatedCalls) {
+        previousDataHash.put("duration", "-1");
+        previousDataHash.put("repeatedCalls", "" + repeatedCalls);
+        return newCursorDataObject(previousDataHash);
+    }
 
-        String[] mPhoneNumberProjection = {
-                ContactsContract.PhoneLookup._ID,
-                ContactsContract.PhoneLookup.NUMBER,
-                ContactsContract.PhoneLookup.DISPLAY_NAME,
-                ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI,
-        };
-        Cursor cur = getActivity().getContentResolver().query(lookupUri, mPhoneNumberProjection, null, null, null);
-        String[] values = {null, null};
-        try {
-            if (cur.moveToFirst()) {
-                String name = null, puri = null;
-                do {
-                    name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                    puri = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
-                    if (name != null) break;
-                } while (cur.moveToNext());
-                values[0] = name;
-                values[1] = puri;
-            }
-        } finally {
-            if (cur != null)
-                cur.close();
+    private HashMap<String, String> getDataFromCursor(Cursor cursor) {
+        HashMap<String, String> values = new HashMap<>();
+
+        String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
+
+        String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
+        String photoUri = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_PHOTO_URI));
+        HashMap<String, String> val = new HashMap<>();
+
+        if (name == null)
+            val = phoneContact.getDisplayName(getActivity(), number);
+        else {
+            val.put("name", name);
+            val.put("photoUri", photoUri);
         }
+
+
+        values.put("id", cursor.getString(0));
+        values.put("number", number);
+        values.put("type", cursor.getString(cursor.getColumnIndex(CallLog.Calls.TYPE)));
+        values.put("simSlot", cursor.getString(cursor.getColumnIndex(CallLog.Calls.PHONE_ACCOUNT_ID)));
+
+        values.put("name", val.get("name"));
+        values.put("nameNull", val.get("name"));
+        values.put("photoUri", val.get("photoUri"));
+        values.put("is_read", cursor.getString(cursor.getColumnIndex(CallLog.Calls.IS_READ)));
+        values.put("date", cursor.getString(cursor.getColumnIndex(CallLog.Calls.DATE)));
+        values.put("duration", cursor.getString(cursor.getColumnIndex(CallLog.Calls.DURATION)));
+
         return values;
+    }
+
+    private Object[] newCursorDataObject(HashMap<String, String> values) {
+        String id = values.get("id");
+        String name = values.get("name");
+        String photoUri = values.get("photoUri");
+        String nameNull = values.get("nameNull");
+        String number = values.get("number");
+        String type = values.get("type");
+        String date = values.get("date");
+        String duration = values.get("duration");
+        String simSlot = values.get("simSlot");
+        String isRead = values.get("is_read");
+        String repeatedCalls = values.get("repeatedCalls");
+
+        nameNull = nameNull == null ? null : name;
+
+        if (repeatedCalls == null || repeatedCalls.equals(""))
+            return new Object[]{
+                    id,
+                    photoUri,
+                    nameNull,
+                    number,
+                    type,
+                    date,
+                    duration,
+                    simSlot,
+                    isRead
+            };
+        else
+            return new Object[]{
+                    id,
+                    photoUri,
+                    nameNull,
+                    number,
+                    type,
+                    date,
+                    duration,
+                    simSlot,
+                    isRead,
+                    repeatedCalls
+            };
+    }
+
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == PERMISSION_REQUEST_HISTORY) {
+            boolean granted = grantResults.length > 0;
+            for (int grantResult : grantResults)
+                granted = granted && grantResult == PackageManager.PERMISSION_GRANTED;
+            if (granted) showCallLogs();
+            else
+                Toast.makeText(getContext().getApplicationContext(),
+                        "Permission is not provided to read caller history.!",
+                        Toast.LENGTH_SHORT).show();
+        }
     }
 }

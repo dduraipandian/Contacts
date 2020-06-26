@@ -20,6 +20,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.cursoradapter.widget.SimpleCursorAdapter;
 
@@ -75,25 +76,22 @@ public class CustomAdapter extends SimpleCursorAdapter {
     }
 
     private int phoneTypeResource() {
-        String type = getCursor().getString(getCursor().getColumnIndex(CallLog.Calls.TYPE));
+        int type = getCursor().getInt(getCursor().getColumnIndex(CallLog.Calls.TYPE));
         int phResource;
         switch (type) {
-            case "1":
+            case CallLog.Calls.INCOMING_TYPE:
                 phResource = android.R.drawable.sym_call_incoming;
                 break;
-            case "2":
+            case CallLog.Calls.OUTGOING_TYPE:
                 phResource = android.R.drawable.sym_call_outgoing;
                 break;
-            case "3":
-                phResource = android.R.drawable.sym_call_missed;
-                break;
-            case "4":
+            case CallLog.Calls.VOICEMAIL_TYPE:
                 phResource = android.R.drawable.stat_notify_voicemail;
                 break;
-            case "5":
+            case CallLog.Calls.REJECTED_TYPE:
                 phResource = R.drawable.ic_cancel_black_24dp;
                 break;
-            case "6":
+            case CallLog.Calls.BLOCKED_TYPE:
                 phResource = R.drawable.ic_app_blocking_black_24dp;
                 break;
             default:
@@ -108,14 +106,19 @@ public class CustomAdapter extends SimpleCursorAdapter {
         return resourceView;
     }
 
-    private String getDisplayName(){
+    private String getDisplayName() {
         String name = getCursor().getString(getCursor().getColumnIndex("name"));
         return name;
     }
 
-    private String getPhotoURI(){
+    private String getPhotoURI() {
         String photoURI = getCursor().getString(getCursor().getColumnIndex("photo_uri"));
         return photoURI;
+    }
+
+    private int isCallRead() {
+        int isRead = getCursor().getInt(getCursor().getColumnIndex("IS_READ"));
+        return isRead;
     }
 
     private String getFormattedCallDuration(long callDuration) {
@@ -145,6 +148,8 @@ public class CustomAdapter extends SimpleCursorAdapter {
 
         Date dt = new Date();
 
+        CardView cardField = (CardView) findViewById(view, R.id.card_view, cursor);
+
         TextView displayNameField = (TextView) findViewById(view, R.id.displayName, cursor);
         ImageButton callField = (ImageButton) findViewById(view, R.id.call, cursor);
         ImageView profileField = (ImageView) findViewById(view, R.id.icon, cursor);
@@ -152,12 +157,21 @@ public class CustomAdapter extends SimpleCursorAdapter {
         ImageView phTypeImgField = (ImageView) findViewById(view, R.id.phTypeImage, cursor);
         TextView callTimeField = (TextView) findViewById(view, R.id.callTime, cursor);
         TextView callDurationField = (TextView) findViewById(view, R.id.callDuration, cursor);
-        TextView simField = (TextView) findViewById(view, R.id.sim, cursor);
+        CardView simField = (CardView) findViewById(view, R.id.sim, cursor);
+        TextView simTextField = (TextView) findViewById(view, R.id.sim1, cursor);
         TextView repeatedCallsField = (TextView) findViewById(view, R.id.repeatedCalls, cursor);
 
         long callTime = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
         long callDuration = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DURATION));
         String phoneNumber = getPhoneNumber();
+
+        int isRead = isCallRead();
+
+        int type = getCursor().getInt(getCursor().getColumnIndex(CallLog.Calls.TYPE));
+
+        if (isRead == 0 && type == CallLog.Calls.MISSED_TYPE) {
+            displayNameField.setTextColor(context.getResources().getColor(R.color.colorMissedCall, null));
+        }
 
         int deviceNum = 0;
         try {
@@ -169,9 +183,10 @@ public class CustomAdapter extends SimpleCursorAdapter {
             deviceNum = deviceNum + 1;
         }
 
-        if (this.simSlots > 1)
-            simField.setText("S" + deviceNum);
-        else {
+        if (this.simSlots > 1) {
+            simTextField.setText("S" + deviceNum);
+            simField.setVisibility(View.VISIBLE);
+        } else {
             simField.setVisibility(View.GONE);
         }
 
@@ -183,8 +198,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
                 if (repeatedCalls > 1) {
                     repeatedCallsField.setVisibility(View.VISIBLE);
                     repeatedCallsField.setText("(" + repeatedCalls + ")");
-                }
-                else repeatedCallsField.setVisibility(View.GONE);
+                } else repeatedCallsField.setVisibility(View.GONE);
             } catch (Exception e) {
                 repeatedCallsField.setVisibility(View.GONE);
             }
@@ -230,6 +244,8 @@ public class CustomAdapter extends SimpleCursorAdapter {
         if (photoUri != null && photoUri.length() > 0) {
             Uri myUri = Uri.parse(photoUri);
             profileField.setImageURI(myUri);
+        } else {
+            profileField.setImageResource(R.drawable.ic_person_24dp);
         }
 
         newMessageField.setOnClickListener(new View.OnClickListener() {

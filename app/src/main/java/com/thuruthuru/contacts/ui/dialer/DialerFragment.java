@@ -3,9 +3,11 @@ package com.thuruthuru.contacts.ui.dialer;
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,14 +27,22 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.thuruthuru.contacts.MainActivity;
 import com.thuruthuru.contacts.R;
+import com.thuruthuru.contacts.ui.common.phoneContact;
 
 import java.io.StringWriter;
+import java.util.HashMap;
 
-public class DialerFragment extends Fragment{
+public class DialerFragment extends Fragment {
 
     private EditText phoneField;
     private TextView addNew;
+
+    private static final int PERMISSION_REQUEST_READ_CONTACTS = 0;
+    private static final int PERMISSION_REQUEST_CALL = 1;
+    private static final int PERMISSION_REQUEST_RECEIVER = 2;
+    private static final int REQUEST_OVERLAY_PERMISSION = 3;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -46,12 +56,12 @@ public class DialerFragment extends Fragment{
             public void onClick(View v) {
                 String phoneNumber = phoneField.getText().toString();
                 Intent createIntent;
-                if(phoneNumber.length() > 0){
+                if (phoneNumber.length() > 0) {
                     createIntent = new Intent(
                             ContactsContract.Intents.SHOW_OR_CREATE_CONTACT,
                             Uri.fromParts("tel", phoneNumber, null));
                     createIntent.putExtra(ContactsContract.Intents.EXTRA_FORCE_CREATE, true);
-                } else{
+                } else {
                     createIntent = new Intent(Intent.ACTION_INSERT);
                     createIntent.setType(ContactsContract.Contacts.CONTENT_TYPE);
                 }
@@ -96,7 +106,7 @@ public class DialerFragment extends Fragment{
             }
         });
 
-        ((ImageButton) root.findViewById(R.id.delete)).setOnClickListener(new View.OnClickListener(){
+        ((ImageButton) root.findViewById(R.id.delete)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 String phoneNumber = phoneField.getText().toString();
@@ -104,12 +114,12 @@ public class DialerFragment extends Fragment{
                 StringWriter sw = new StringWriter();
                 sw.append(phoneNumber);
 
-                if (phoneNumber != null && phoneNumber.length() > 0) {
+                if (phoneNumber.length() > 0) {
                     phoneNumber = phoneNumber.substring(0, phoneNumber.length() - 1);
                     phoneField.setText(phoneNumber);
                 }
 
-                if(phoneNumber.length() == 0)
+                if (phoneNumber.length() == 0)
                     addNew.setText("NEW");
                 else
                     addNew.setText("ADD");
@@ -119,44 +129,62 @@ public class DialerFragment extends Fragment{
         ((ImageButton) root.findViewById(R.id.call)).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if(isPermissionGranted()) callAction();
-            }
-
-            public void callAction() {
-                String phoneNumber = phoneField.getText().toString();
-
-                if (phoneNumber.length() == 0){
-                    Context context = getContext().getApplicationContext();
-                    int duration = Toast.LENGTH_SHORT;
-                    Toast toast = Toast.makeText(context, "Phone number is empty.!", duration);
-                    toast.show();
-                } else {
-                    Intent callIntent = new Intent(Intent.ACTION_CALL);
-                    callIntent.setData(Uri.fromParts("tel", phoneNumber, null));
-                    startActivity(callIntent);
-                }
-            };
-
-            public  boolean isPermissionGranted() {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    Context context = getContext().getApplicationContext();
-                    int permission = ActivityCompat.checkSelfPermission(context, Manifest.permission.CALL_PHONE);
-
-                    if ( permission == PackageManager.PERMISSION_GRANTED)
-                        return true;
-                    else {
-                        requestPermissions(new String[]{Manifest.permission.CALL_PHONE}, 1);
-                        return false;
-                    }
-                }
-                else return true;
+                boolean rc_granted = isPermissionGranted(Manifest.permission.CALL_PHONE, PERMISSION_REQUEST_CALL);
+                if (rc_granted) callAction();
+                else
+                    Toast.makeText(getContext().getApplicationContext(),
+                            "Permission is not provided to call.!",
+                            Toast.LENGTH_SHORT).show();
             }
         });
 
+        boolean rc_granted = isPermissionGranted(Manifest.permission.READ_CALL_LOG, PERMISSION_REQUEST_CALL);
+
+        String[] permissions = {
+                Manifest.permission.READ_CALL_LOG,
+                Manifest.permission.READ_PHONE_STATE
+        };
+
+        boolean granted = true;
+        for (String permission : permissions) {
+            int perm = ActivityCompat.checkSelfPermission(getActivity(), permission);
+
+            if (perm == PackageManager.PERMISSION_GRANTED)
+                granted = granted && true;
+            else
+                granted = granted && false;
+        }
+
+        if (!granted) {
+            requestPermissions(permissions, PERMISSION_REQUEST_RECEIVER);
+        }
+
+        if (!Settings.canDrawOverlays(getActivity())) {
+            // ask for setting
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + getActivity().getPackageName()));
+            startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION);
+        }
         return root;
     }
 
-    private void setNumber(String num){
+
+    public void callAction() {
+        String phoneNumber = phoneField.getText().toString();
+
+        if (phoneNumber.length() == 0) {
+            Context context = getContext().getApplicationContext();
+            int duration = Toast.LENGTH_SHORT;
+            Toast toast = Toast.makeText(context, "Phone number is empty.!", duration);
+            toast.show();
+        } else {
+            Intent callIntent = new Intent(Intent.ACTION_CALL);
+            callIntent.setData(Uri.fromParts("tel", phoneNumber, null));
+            startActivity(callIntent);
+        }
+    }
+
+    private void setNumber(String num) {
         String phoneNumber = phoneField.getText().toString();
 
         StringWriter sw = new StringWriter();
@@ -165,14 +193,53 @@ public class DialerFragment extends Fragment{
 
         phoneField.setText(sw.toString());
 
-        if(phoneField.getText().toString().length() == 0){
+        if (phoneField.getText().toString().length() == 0) {
             addNew.setText("NEW");
             addNew.setTextColor(getResources().getColor(R.color.colorBackspace, null));
-        }
-        else{
-            addNew.setText("ADD");
+        } else {
+            String phoneNum = phoneField.getText().toString();
+            boolean rc_granted = isPermissionGranted("Manifest.permission.READ_CONTACTS", PERMISSION_REQUEST_READ_CONTACTS);
+            String name;
+
+            if (rc_granted) {
+                HashMap<String, String> val = phoneContact.getDisplayName(getActivity(), phoneNum);
+                name = val.get("name");
+            } else name = null;
+
+            if (name != null)
+                addNew.setText(name);
+            else
+                addNew.setText("ADD");
             addNew.setTextColor(getResources().getColor(R.color.colorPrimaryDark, null));
         }
+    }
 
+    private boolean isPermissionGranted(@NonNull String permission, int requestCode) {
+        Context context = getContext().getApplicationContext();
+        int perm = ActivityCompat.checkSelfPermission(context, permission);
+
+        if (perm == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            requestPermissions(new String[]{permission}, requestCode);
+            return false;
+        }
+    }
+
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        if (requestCode == PERMISSION_REQUEST_CALL) {
+            boolean granted = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
+            if (granted) callAction();
+        }
+
+        if (requestCode == PERMISSION_REQUEST_RECEIVER) {
+            boolean granted = grantResults.length > 0;
+            for (int grantResult : grantResults)
+                granted = granted && grantResult == PackageManager.PERMISSION_GRANTED;
+            if (!granted)
+                Toast.makeText(getContext().getApplicationContext(),
+                        "Permission is required for missed call notification!",
+                        Toast.LENGTH_SHORT).show();
+        }
     }
 }

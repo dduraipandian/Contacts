@@ -4,7 +4,6 @@ import android.Manifest;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -20,6 +19,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -29,26 +29,24 @@ import androidx.loader.app.LoaderManager;
 import androidx.loader.content.CursorLoader;
 import androidx.loader.content.Loader;
 
+import com.thuruthuru.contacts.ui.common.phoneContact;
 import com.thuruthuru.contacts.R;
 
 public abstract class BaseContactsFragment extends Fragment implements AdapterView.OnItemClickListener,
         LoaderManager.LoaderCallbacks<Cursor> {
 
+    private static boolean resumeActivity = true;
+
     @SuppressLint("InlinedApi")
     private static final String[] FROM_COLUMNS = {
             ContactsContract.Contacts.PHOTO_THUMBNAIL_URI,
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB ?
-                    ContactsContract.Contacts.DISPLAY_NAME_PRIMARY :
-                    ContactsContract.Contacts.DISPLAY_NAME,
+            ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
             ContactsContract.CommonDataKinds.Phone.TYPE,
             ContactsContract.CommonDataKinds.Phone.NUMBER,
             ContactsContract.Contacts.STARRED
     };
 
-    private static final String order_by = Build.VERSION.SDK_INT
-            >= Build.VERSION_CODES.HONEYCOMB ?
-            ContactsContract.Contacts.DISPLAY_NAME_PRIMARY :
-            ContactsContract.Contacts.DISPLAY_NAME + " COLLATE NOCASE ASC NULLS LAST ";
+    private static final String order_by = ContactsContract.Contacts.DISPLAY_NAME_PRIMARY;
 
 
     private static final String ORDER_BY = "CAST( " + order_by + " as INT) COLLATE NOCASE ASC, " + order_by + " COLLATE NOCASE ASC ";
@@ -58,10 +56,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
             ContactsContract.Contacts._ID,
             ContactsContract.Contacts.LOOKUP_KEY,
             ContactsContract.Contacts.PHOTO_THUMBNAIL_URI,
-            Build.VERSION.SDK_INT
-                    >= Build.VERSION_CODES.HONEYCOMB ?
-                    ContactsContract.Contacts.DISPLAY_NAME_PRIMARY :
-                    ContactsContract.Contacts.DISPLAY_NAME,
+            ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
             ContactsContract.CommonDataKinds.Phone.TYPE,
             ContactsContract.CommonDataKinds.Phone.NUMBER,
             ContactsContract.Contacts.STARRED
@@ -70,11 +65,9 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
     // Defines the text expression
     @SuppressLint("InlinedApi")
     private static String selection_display_name =
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB ?
-                    ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?" :
-                    ContactsContract.Contacts.DISPLAY_NAME + " LIKE ?";
+            ContactsContract.Contacts.DISPLAY_NAME_PRIMARY + " LIKE ?";
 
-    private String OriginalSELECTION = "(" + selection_display_name + " or " +
+    private String originalSELECTION = "(" + selection_display_name + " or " +
             ContactsContract.CommonDataKinds.Phone.NUMBER + " LIKE ? )";
 
     private String SELECTION = "";
@@ -93,12 +86,6 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
 
     private boolean DISABLE_CALL = false;
     private boolean DISABLE_FAV = false;
-
-    private boolean showContact;
-    private boolean phoneContact;
-    private boolean simContact;
-    private boolean mailContact;
-    private boolean whatsAppContact;
 
     // The column index for the _ID column
     private static final int CONTACT_ID_INDEX = 0;
@@ -145,10 +132,10 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
         EditText searchField = (EditText) root.findViewById(R.id.searchField);
 
         if (ONLY_FAV) {
-            OriginalSELECTION = OriginalSELECTION + " and " + ContactsContract.Contacts.STARRED + " = '1' ";
+            originalSELECTION = originalSELECTION + " and " + ContactsContract.Contacts.STARRED + " = '1' ";
         }
 
-        SELECTION = getSelection();
+        SELECTION = phoneContact.getSelection(getActivity(), originalSELECTION);
 
         if (SEARCH_ENABLED) {
             searchField.addTextChangedListener(new TextWatcher() {
@@ -176,73 +163,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
     @SuppressLint("ResourceType")
     public void onActivityCreated(Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
-        isPermissionGrantedContacts();
-        isPermissionGrantedCall();
-        isPermissionGrantedContactWrite();
-    }
 
-    public void onQueryTextChange(String newText) {
-        searchString = !TextUtils.isEmpty(newText) ? newText : "";
-        LoaderManager.getInstance(this).restartLoader(0, null, this);
-    }
-
-    private String getSelection(){
-        SharedPreferences sharedPref = getActivity().getSharedPreferences("UserInfo", Context.MODE_PRIVATE);
-
-        showContact = sharedPref.getBoolean("show_contact", true);
-        phoneContact = sharedPref.getBoolean("phone_contact", true);
-        simContact = sharedPref.getBoolean("sim_contact", true);
-        mailContact = sharedPref.getBoolean("mail_contact", true);
-        whatsAppContact = sharedPref.getBoolean("whatsapp_contact", false);
-
-        String SELECTION  = OriginalSELECTION;
-
-        if (showContact){
-            SELECTION = SELECTION + " and " + ContactsContract.Contacts.HAS_PHONE_NUMBER + " != 0 and " +
-                    ContactsContract.Contacts.HAS_PHONE_NUMBER + " is not null ";
-        }
-        else{
-            SELECTION = SELECTION + " and (" + ContactsContract.Contacts.HAS_PHONE_NUMBER + " >= 0 or " +
-                    ContactsContract.Contacts.HAS_PHONE_NUMBER + " is null ) ";
-        }
-
-        String phoneSelection = "";
-
-        if (phoneContact){
-            phoneSelection += !phoneSelection.equals("") ? " and " : "";
-            phoneSelection = phoneSelection + ContactsContract.RawContacts.ACCOUNT_TYPE + " like '%account.phone' ";
-        }
-
-        if (simContact){
-            phoneSelection += !phoneSelection.equals("") ? " or " : "";
-            phoneSelection = phoneSelection + ContactsContract.RawContacts.ACCOUNT_TYPE + " like '%account.usim' ";
-        }
-
-        if (mailContact){
-            phoneSelection += !phoneSelection.equals("") ? " or " : "";
-            phoneSelection = phoneSelection + ContactsContract.RawContacts.ACCOUNT_TYPE + " = 'com.google' ";
-        }
-
-        if (whatsAppContact){
-            phoneSelection += !phoneSelection.equals("") ? " or " : "";
-            phoneSelection = phoneSelection + ContactsContract.RawContacts.ACCOUNT_TYPE + " = 'com.whatsapp' ";
-        }
-
-        if(!phoneSelection.equals("")){
-            SELECTION = SELECTION + " and (" + phoneSelection + ")";
-        }
-
-        return SELECTION;
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        SELECTION = getSelection();
-        LoaderManager.getInstance(this).restartLoader(0, null, this);
-    }
-
-    private void showContacts() {
         // Gets the ListView from the View list of the parent activity
 
         cursorAdapter = new CustomAdapter(
@@ -254,62 +175,70 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
         contactsList.setAdapter(cursorAdapter);
         contactsList.setOnItemClickListener(this);
 
+        isPermissionGrantedCall();
+    }
 
+    private void isPermissionGrantedCall() {
+        String write_permission = Manifest.permission.WRITE_CONTACTS;
+        String read_permission = Manifest.permission.READ_CONTACTS;
+        String call_permission = Manifest.permission.CALL_PHONE;
+
+        boolean read_granted = isPermissionGranted(read_permission, PERMISSION_REQUEST_READ_CONTACTS);
+
+        if (read_granted)
+            showContacts();
+
+        boolean write_ranted = isPermissionGranted(write_permission, PERMISSION_REQUEST_WRITE_CONTACT);
+        boolean call_granted = isPermissionGranted(call_permission, PERMISSION_REQUEST_CALL_CONTACT);
+    }
+
+    public void onQueryTextChange(String newText) {
+        searchString = !TextUtils.isEmpty(newText) ? newText : "";
+        String permission = Manifest.permission.READ_CONTACTS;
+        boolean granted = isPermissionGranted(permission, PERMISSION_REQUEST_READ_CONTACTS);
+        if (granted) LoaderManager.getInstance(this).restartLoader(0, null, this);
+        else
+            Toast.makeText(getContext().getApplicationContext(),
+                    "Permission is not provided to read contacts.!",
+                    Toast.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        SELECTION = phoneContact.getSelection(getActivity(), originalSELECTION);
+
+        String permission = Manifest.permission.READ_CONTACTS;
+
+        boolean granted = isPermissionGranted(permission, PERMISSION_REQUEST_READ_CONTACTS);
+        if (granted) LoaderManager.getInstance(this).initLoader(0, null, this);
+    }
+
+    private void showContacts() {
         // Initializes the loader
         LoaderManager.getInstance(this).initLoader(0, null, this);
     }
 
     private boolean isPermissionGranted(@NonNull String permission, int requestCode) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Context context = getContext().getApplicationContext();
-            int perm = ActivityCompat.checkSelfPermission(context, permission);
+        Context context = getContext().getApplicationContext();
+        int perm = ActivityCompat.checkSelfPermission(context, permission);
 
-            if (perm == PackageManager.PERMISSION_GRANTED) {
-                return true;
-            } else {
-                requestPermissions(new String[]{permission}, requestCode);
-                return false;
-            }
-        } else return true;
-    }
-
-    private void isPermissionGrantedContacts() {
-        String permission = Manifest.permission.READ_CONTACTS;
-        int requestCode = PERMISSION_REQUEST_READ_CONTACTS;
-        boolean granted = isPermissionGranted(permission, requestCode);
-        if (granted) showContacts();
-    }
-
-
-    private void isPermissionGrantedContactWrite() {
-        String permission = Manifest.permission.WRITE_CONTACTS;
-        boolean granted = isPermissionGranted(permission, PERMISSION_REQUEST_WRITE_CONTACT);
-        DISABLE_FAV = !granted;
-    }
-
-    private void isPermissionGrantedCall() {
-        String permission = Manifest.permission.CALL_PHONE;
-        boolean granted = isPermissionGranted(permission, PERMISSION_REQUEST_CALL_CONTACT);
-        DISABLE_CALL = !granted;
+        if (perm == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            requestPermissions(new String[]{permission}, requestCode);
+            return false;
+        }
     }
 
     @Override
     public void onItemClick(AdapterView<?> parent, View item, int position, long rowID) {
-        // Get the Cursor
         Cursor cursor = ((SimpleCursorAdapter) parent.getAdapter()).getCursor();
-        // Move to the selected contact
         cursor.moveToPosition(position);
-        // Get the _ID value
         long contactId = cursor.getLong(CONTACT_ID_INDEX);
-        // Get the selected LOOKUP KEY
         String contactKey = cursor.getString(CONTACT_KEY_INDEX);
 
-        // Create the contact's content Uri
         Uri contactUri = ContactsContract.Contacts.getLookupUri(contactId, contactKey);
-        /*
-         * You can use contactUri as the content URI for retrieving
-         * the details for a contact.
-         */
 
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setData(contactUri);
@@ -350,21 +279,25 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
 
     }
 
-    public void onRequestPermissionsResult(int permission, String[] permissions, int[] grantResults) {
-        switch (permission) {
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        switch (requestCode) {
             case PERMISSION_REQUEST_READ_CONTACTS:
                 boolean showAllContacts = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
                 if (showAllContacts) showContacts();
+                else
+                    Toast.makeText(getContext().getApplicationContext(),
+                            "Permission is not provided to read contacts.!",
+                            Toast.LENGTH_SHORT).show();
+                return;
 
             case PERMISSION_REQUEST_CALL_CONTACT:
                 boolean callContacts = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-                if (callContacts) DISABLE_CALL = false;
-                else DISABLE_CALL = true;
+                DISABLE_CALL = !callContacts;
+                return;
 
             case PERMISSION_REQUEST_WRITE_CONTACT:
                 boolean writeContacts = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
-                if (writeContacts) DISABLE_FAV = false;
-                else DISABLE_FAV = true;
+                DISABLE_FAV = !writeContacts;
         }
     }
 }

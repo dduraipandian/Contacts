@@ -270,6 +270,7 @@
                                 android:layout_gravity="center_horizontal|top"
                                 android:background="@null"
                                 android:textColor="@color/colorPrimary"
+                                android:clickable="false"
                                 android:text="+"
                                 android:textSize="26sp" />
                         </LinearLayout>

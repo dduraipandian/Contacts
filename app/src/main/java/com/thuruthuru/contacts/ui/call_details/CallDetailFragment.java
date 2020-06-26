@@ -29,9 +29,11 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 import com.thuruthuru.contacts.R;
+import com.thuruthuru.contacts.ui.common.phoneContact;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -95,44 +97,6 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
         this.simSlots = simSlots;
     }
 
-    public String[] getDisplayName(String number) {
-        /// number is the phone number
-        Uri lookupUri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI,
-                Uri.encode(number));
-
-        String[] mPhoneNumberProjection = {
-                ContactsContract.PhoneLookup._ID,
-                ContactsContract.PhoneLookup.LOOKUP_KEY,
-                ContactsContract.PhoneLookup.NUMBER,
-                ContactsContract.PhoneLookup.DISPLAY_NAME,
-                ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI,
-        };
-        Cursor cur = getActivity().getContentResolver().query(lookupUri, mPhoneNumberProjection, null, null, null);
-        String[] values = {null, null, null, null};
-        String name = null, puri = null, uri = null;
-
-        try {
-            if (cur.moveToFirst()) {
-                do {
-                    name = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                    puri = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
-
-                    long id = cur.getLong(cur.getColumnIndex(ContactsContract.Contacts._ID));
-                    String key = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));
-                    uri = ContactsContract.Contacts.getLookupUri(id, key).toString();
-
-                    if (name != null) break;
-                } while (cur.moveToNext());
-            }
-        } finally {
-            values[0] = name;
-            values[1] = puri;
-            values[2] = uri;
-            if (cur != null)
-                cur.close();
-        }
-        return values;
-    }
 
     @RequiresApi(api = Build.VERSION_CODES.N)
     @NonNull
@@ -143,9 +107,10 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
 
         TextView title = (TextView) view.findViewById(R.id.title);
 
-        String[] values = getDisplayName(phoneNumber);
-        this.userName = values[0];
-        this.photoUri = values[1];
+        HashMap<String, String> values = phoneContact.getDisplayName(getActivity(), phoneNumber);
+
+        this.userName = values.get("name");
+        this.photoUri = values.get("photoUri");
 
         int deviceNum = 0;
         try {
@@ -218,7 +183,7 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
         });
 
 
-        String selectedContactUri = values[2];
+        String selectedContactUri = values.get("contactUri");
         addContactField.setTag(selectedContactUri);
         addContactField.setOnClickListener(new View.OnClickListener() {
             @Override
