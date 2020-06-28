@@ -7,6 +7,7 @@ import java.util.List;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.NotificationManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -178,6 +179,8 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         where.append(" = ?");
         getActivity().getContentResolver().update(CallLog.Calls.CONTENT_URI, values, where.toString(),
                 new String[]{Integer.toString(CallLog.Calls.MISSED_TYPE)});
+        NotificationManager notificationManager = (NotificationManager) getActivity().getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
     }
 
     private boolean isPermissionGranted(@NonNull String permission, int requestCode) {
@@ -354,7 +357,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
 
         String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
-        String photoUri = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_PHOTO_URI));
+            String photoUri = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_PHOTO_URI));
         HashMap<String, String> val = new HashMap<>();
 
         if (name == null)
@@ -428,10 +431,6 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
             for (int grantResult : grantResults)
                 granted = granted && grantResult == PackageManager.PERMISSION_GRANTED;
             if (granted) showCallLogs();
-            else
-                Toast.makeText(getContext().getApplicationContext(),
-                        "Permission is not provided to read caller history.!",
-                        Toast.LENGTH_SHORT).show();
         }
     }
 }

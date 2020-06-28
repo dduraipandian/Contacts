@@ -76,7 +76,7 @@ public class phoneContact {
                 ContactsContract.PhoneLookup.LOOKUP_KEY,
                 ContactsContract.PhoneLookup.NUMBER,
                 ContactsContract.PhoneLookup.DISPLAY_NAME,
-                ContactsContract.PhoneLookup.PHOTO_THUMBNAIL_URI
+                ContactsContract.PhoneLookup.PHOTO_URI
         };
 
         try (Cursor cur = context.getContentResolver().query(lookupUri,
@@ -88,7 +88,7 @@ public class phoneContact {
                 String displayName = null, photoUri = null, uri = null;
                 do {
                     displayName = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                    photoUri = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
+                    photoUri = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.PHOTO_URI));
 
                     long id = cur.getLong(cur.getColumnIndex(ContactsContract.Contacts._ID));
                     String key = cur.getString(cur.getColumnIndex(ContactsContract.Contacts.LOOKUP_KEY));

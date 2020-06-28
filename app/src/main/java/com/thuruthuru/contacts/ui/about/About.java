@@ -1,5 +1,6 @@
 package com.thuruthuru.contacts.ui.about;
 
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.thuruthuru.contacts.R;
+import com.thuruthuru.contacts.ui.policy.PolicyActivity;
 
 public class About extends AppCompatActivity {
     @Override
@@ -20,7 +22,10 @@ public class About extends AppCompatActivity {
         setContentView(R.layout.about);
 
         TextView rate_us = (TextView) findViewById(R.id.rate_us);
+        TextView write_us = (TextView) findViewById(R.id.write_us);
         TextView share_us = (TextView) findViewById(R.id.share_us);
+        TextView privacy = (TextView) findViewById(R.id.privacy);
+        TextView terms = (TextView) findViewById(R.id.terms);
 
         rate_us.setOnClickListener(new View.OnClickListener() {
 
@@ -35,6 +40,27 @@ public class About extends AppCompatActivity {
             }
         });
 
+        write_us.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                String subject = "Contact Dialer - Suggestion";
+
+                Intent selectorIntent = new Intent(Intent.ACTION_SENDTO);
+                selectorIntent.setData(Uri.parse("mailto:sevenishidreams@gmail.com" ));
+
+                final Intent emailIntent = new Intent(Intent.ACTION_SEND);
+                emailIntent.putExtra(Intent.EXTRA_SUBJECT, subject);
+                emailIntent.setSelector( selectorIntent );
+
+                try {
+                    startActivity(emailIntent);
+                } catch (ActivityNotFoundException e) {
+                    //TODO: Handle case where no email app is available
+                }
+            }
+        });
+
         share_us.setOnClickListener(new View.OnClickListener() {
 
             @Override
@@ -45,6 +71,26 @@ public class About extends AppCompatActivity {
                 String pkName = getPackageName();
                 intent.putExtra("sms_body", "market://details?id=" + pkName);
                 startActivity(intent);
+            }
+        });
+
+        privacy.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), PolicyActivity.class);
+                intent.putExtra("policy_type", "privacy-policy");
+                startActivityForResult(intent, 0);
+            }
+        });
+
+        terms.setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(getApplicationContext(), PolicyActivity.class);
+                intent.putExtra("policy_type", "terms");
+                startActivityForResult(intent, 0);
             }
         });
     }

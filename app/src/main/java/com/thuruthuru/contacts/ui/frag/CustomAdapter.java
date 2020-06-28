@@ -64,7 +64,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
     }
 
     private String getPhotoUri() {
-        String photoUri = getCursor().getString(getCursor().getColumnIndex(ContactsContract.Contacts.PHOTO_THUMBNAIL_URI));
+        String photoUri = getCursor().getString(getCursor().getColumnIndex(ContactsContract.Contacts.PHOTO_URI));
         return photoUri;
     }
 
@@ -97,7 +97,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
     public void bindView(View view, Context context, final Cursor cursor) {
         // R.layout.list_row is your xml layout for each row
         super.bindView(view, context, cursor);
-        ImageButton callField = (ImageButton) findViewById(view, R.id.call, cursor);
+        ImageView callField = (ImageView) findViewById(view, R.id.call, cursor);
         ImageView profileField = (ImageView) findViewById(view, R.id.icon, cursor);
         ImageView addFavField = (ImageView) findViewById(view, R.id.addFav, cursor);
         ImageView newMessageField = (ImageView) findViewById(view, R.id.newMessage, cursor);

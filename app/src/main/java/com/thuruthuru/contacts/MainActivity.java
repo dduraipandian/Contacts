@@ -2,14 +2,8 @@ package com.thuruthuru.contacts;
 
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
 import android.provider.CallLog;
-import android.provider.ContactsContract;
-import android.provider.Settings;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -30,8 +24,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        String menuFragment = getIntent().getStringExtra("menu");
+
         setContentView(R.layout.activity_main);
         BottomNavigationView navView = findViewById(R.id.nav_view);
+
 
         // Passing each menu ID as a set of Ids because each
         // menu should be considered as top level destinations.
@@ -41,9 +38,19 @@ public class MainActivity extends AppCompatActivity {
                 R.id.navigation_history,
                 R.id.navigation_contacts).build();
         NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment);
+
+        if (menuFragment != null && menuFragment.equals("HistoryFragment"))
+            navController.navigate(R.id.navigation_history);
+
         NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
         NavigationUI.setupWithNavController(navView, navController);
     }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+    }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -83,7 +90,7 @@ public class MainActivity extends AppCompatActivity {
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        getContentResolver().delete(CallLog.Calls.CONTENT_URI,null, null);
+                        getContentResolver().delete(CallLog.Calls.CONTENT_URI, null, null);
                     }
                 });
         builder.setNegativeButton(android.R.string.cancel, new DialogInterface.OnClickListener() {
@@ -93,10 +100,10 @@ public class MainActivity extends AppCompatActivity {
         });
 
         AlertDialog dialog = builder.create();
-        dialog.setOnShowListener( new DialogInterface.OnShowListener() {
+        dialog.setOnShowListener(new DialogInterface.OnShowListener() {
             @Override
             public void onShow(DialogInterface arg0) {
-                AlertDialog dialog = (AlertDialog)arg0 ;
+                AlertDialog dialog = (AlertDialog) arg0;
                 dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setTextColor(getResources().getColor(R.color.colorBackspace, null));
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(getResources().getColor(R.color.colorMissedCall, null));
             }
@@ -104,12 +111,12 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    void showAbout(){
+    void showAbout() {
         Intent intent = new Intent(this, About.class);
         startActivityForResult(intent, 0);
     }
 
-    void showSetting(){
+    void showSetting() {
         Intent intent = new Intent(this, Setting.class);
         startActivityForResult(intent, 0);
     }

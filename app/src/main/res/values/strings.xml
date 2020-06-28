@@ -13,8 +13,11 @@
     <string name="developers">Developers</string>
     <string name="share">Share</string>
     <string name="rate_us">Rate us</string>
+    <string name="write_us">Write to us for suggestions</string>
+    <string name="privacy">Privacy policy</string>
+    <string name="terms">Terms and condition</string>
     <string name="third_party_licenses">Third Party License</string>
     <string name="about_us_description">
-        Contact Dialer intend to provide simple all one functionality for contact and dialing.
+        Contact Dialer intents to provide simple interface which connects multiple functionality for contact, messaging and dialing.
     </string>
 </resources>

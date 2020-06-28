@@ -138,11 +138,10 @@ public class DialerFragment extends Fragment {
             }
         });
 
-        boolean rc_granted = isPermissionGranted(Manifest.permission.READ_CALL_LOG, PERMISSION_REQUEST_CALL);
-
         String[] permissions = {
                 Manifest.permission.READ_CALL_LOG,
-                Manifest.permission.READ_PHONE_STATE
+                Manifest.permission.READ_PHONE_STATE,
+                Manifest.permission.READ_CONTACTS
         };
 
         boolean granted = true;
@@ -159,12 +158,12 @@ public class DialerFragment extends Fragment {
             requestPermissions(permissions, PERMISSION_REQUEST_RECEIVER);
         }
 
-        if (!Settings.canDrawOverlays(getActivity())) {
-            // ask for setting
-            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-                    Uri.parse("package:" + getActivity().getPackageName()));
-            startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION);
-        }
+//        if (!Settings.canDrawOverlays(getActivity())) {
+//            // ask for setting
+//            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+//                    Uri.parse("package:" + getActivity().getPackageName()));
+//            startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION);
+//        }
         return root;
     }
 
@@ -236,10 +235,6 @@ public class DialerFragment extends Fragment {
             boolean granted = grantResults.length > 0;
             for (int grantResult : grantResults)
                 granted = granted && grantResult == PackageManager.PERMISSION_GRANTED;
-            if (!granted)
-                Toast.makeText(getContext().getApplicationContext(),
-                        "Permission is required for missed call notification!",
-                        Toast.LENGTH_SHORT).show();
         }
     }
 }

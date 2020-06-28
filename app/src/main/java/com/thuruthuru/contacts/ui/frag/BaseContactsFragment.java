@@ -39,7 +39,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
 
     @SuppressLint("InlinedApi")
     private static final String[] FROM_COLUMNS = {
-            ContactsContract.Contacts.PHOTO_THUMBNAIL_URI,
+            ContactsContract.Contacts.PHOTO_URI,
             ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
             ContactsContract.CommonDataKinds.Phone.TYPE,
             ContactsContract.CommonDataKinds.Phone.NUMBER,
@@ -55,7 +55,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
     private static final String[] PROJECTION = {
             ContactsContract.Contacts._ID,
             ContactsContract.Contacts.LOOKUP_KEY,
-            ContactsContract.Contacts.PHOTO_THUMBNAIL_URI,
+            ContactsContract.Contacts.PHOTO_URI,
             ContactsContract.Contacts.DISPLAY_NAME_PRIMARY,
             ContactsContract.CommonDataKinds.Phone.TYPE,
             ContactsContract.CommonDataKinds.Phone.NUMBER,
@@ -284,10 +284,6 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
             case PERMISSION_REQUEST_READ_CONTACTS:
                 boolean showAllContacts = grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
                 if (showAllContacts) showContacts();
-                else
-                    Toast.makeText(getContext().getApplicationContext(),
-                            "Permission is not provided to read contacts.!",
-                            Toast.LENGTH_SHORT).show();
                 return;
 
             case PERMISSION_REQUEST_CALL_CONTACT:

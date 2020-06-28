@@ -148,10 +148,8 @@ public class CustomAdapter extends SimpleCursorAdapter {
 
         Date dt = new Date();
 
-        CardView cardField = (CardView) findViewById(view, R.id.card_view, cursor);
-
         TextView displayNameField = (TextView) findViewById(view, R.id.displayName, cursor);
-        ImageButton callField = (ImageButton) findViewById(view, R.id.call, cursor);
+        ImageView callField = (ImageView) findViewById(view, R.id.call, cursor);
         ImageView profileField = (ImageView) findViewById(view, R.id.icon, cursor);
         ImageView newMessageField = (ImageView) findViewById(view, R.id.newMessage, cursor);
         ImageView phTypeImgField = (ImageView) findViewById(view, R.id.phTypeImage, cursor);
