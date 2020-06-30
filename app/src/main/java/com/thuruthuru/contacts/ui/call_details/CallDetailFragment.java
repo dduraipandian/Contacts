@@ -279,6 +279,7 @@ public class CallDetailFragment extends BottomSheetDialogFragment implements
             } else {
                 createIntent = new Intent(ContactsContract.Intents.Insert.ACTION);
                 createIntent.setType(ContactsContract.RawContacts.CONTENT_TYPE);
+                createIntent.putExtra("phone", phoneNumber);
             }
 
             startActivity(createIntent);

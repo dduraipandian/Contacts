@@ -14,13 +14,10 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.MatrixCursor;
-import android.net.Uri;
-import android.os.Build;
+
 import android.os.Bundle;
 import android.provider.CallLog;
-import android.provider.ContactsContract;
 import android.telephony.TelephonyManager;
-import android.text.TextUtils;
 
 import android.view.LayoutInflater;
 import android.view.View;
@@ -28,9 +25,9 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.cursoradapter.widget.SimpleCursorAdapter;
 import androidx.fragment.app.Fragment;
@@ -120,6 +117,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         em.setText("No new call details to display");
         callList.setEmptyView(em);
 
+        ((AppCompatActivity) getActivity()).getSupportActionBar().setElevation(20);
         return root;
     }
 
@@ -357,7 +355,7 @@ public class HistoryFragment extends Fragment implements AdapterView.OnItemClick
         String number = cursor.getString(cursor.getColumnIndex(CallLog.Calls.NUMBER));
 
         String name = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_NAME));
-            String photoUri = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_PHOTO_URI));
+        String photoUri = cursor.getString(cursor.getColumnIndex(CallLog.Calls.CACHED_PHOTO_URI));
         HashMap<String, String> val = new HashMap<>();
 
         if (name == null)

@@ -22,6 +22,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.cursoradapter.widget.SimpleCursorAdapter;
 import androidx.fragment.app.Fragment;
@@ -118,6 +119,7 @@ public abstract class BaseContactsFragment extends Fragment implements AdapterVi
     public void onCreate(Bundle savedInstanceState) {
         // Always call the super method first
         super.onCreate(savedInstanceState);
+        ((AppCompatActivity) getActivity()).getSupportActionBar().setElevation(20);
     }
 
     public abstract View getCustomView(LayoutInflater inflater, ViewGroup parent, Bundle savedInstanceState);

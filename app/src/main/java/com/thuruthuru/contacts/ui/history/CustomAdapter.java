@@ -1,6 +1,7 @@
 package com.thuruthuru.contacts.ui.history;
 
 import android.Manifest;
+import android.app.Activity;
 import android.content.SharedPreferences;
 import android.provider.CallLog;
 import android.provider.ContactsContract;
@@ -42,6 +43,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
     int SECONDS_IN_MINUTE = 60;
     int MINUTES_IN_HOURS = 60;
     int SECONDS_IN_HOUR = (MINUTES_IN_HOURS * SECONDS_IN_MINUTE);
+    int PERMISSION_REQUEST_CALL_CONTACT = 1;
 
 
     public CustomAdapter(Context context, int layout, Cursor c, String[] from, int[] to, int flag, int simSlots, boolean isCallGroup) {
@@ -149,6 +151,7 @@ public class CustomAdapter extends SimpleCursorAdapter {
         Date dt = new Date();
 
         TextView displayNameField = (TextView) findViewById(view, R.id.displayName, cursor);
+        TextView phoneNumberField = (TextView) findViewById(view, R.id.phoneNumber, cursor);
         ImageView callField = (ImageView) findViewById(view, R.id.call, cursor);
         ImageView profileField = (ImageView) findViewById(view, R.id.icon, cursor);
         ImageView newMessageField = (ImageView) findViewById(view, R.id.newMessage, cursor);
@@ -161,15 +164,10 @@ public class CustomAdapter extends SimpleCursorAdapter {
 
         long callTime = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DATE));
         long callDuration = cursor.getLong(cursor.getColumnIndex(CallLog.Calls.DURATION));
-        String phoneNumber = getPhoneNumber();
 
         int isRead = isCallRead();
 
         int type = getCursor().getInt(getCursor().getColumnIndex(CallLog.Calls.TYPE));
-
-        if (isRead == 0 && type == CallLog.Calls.MISSED_TYPE) {
-            displayNameField.setTextColor(context.getResources().getColor(R.color.colorMissedCall, null));
-        }
 
         int deviceNum = 0;
         try {
@@ -232,6 +230,11 @@ public class CustomAdapter extends SimpleCursorAdapter {
         String displayName = getDisplayName();
         String photoUri = getPhotoURI();
 
+        if (isRead == 0 && type == CallLog.Calls.MISSED_TYPE) {
+            TextView field = (displayName == null || displayName.length() == 0) ? phoneNumberField : displayNameField;
+            field.setTextColor(context.getResources().getColor(R.color.colorMissedCall, null));
+        }
+
         if (displayName == null || displayName.length() == 0) {
             displayNameField.setVisibility(View.GONE);
         } else {
@@ -280,11 +283,15 @@ public class CustomAdapter extends SimpleCursorAdapter {
     }
 
     private boolean isPermissionGranted(View v, @NonNull String permission) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Context context = v.getContext().getApplicationContext();
-            int perm = ActivityCompat.checkSelfPermission(context, permission);
-            return perm == PackageManager.PERMISSION_GRANTED;
-        } else return true;
+        Context context = v.getContext().getApplicationContext();
+        int perm = ActivityCompat.checkSelfPermission(context, permission);
+
+        if (perm == PackageManager.PERMISSION_GRANTED) {
+            return true;
+        } else {
+            ActivityCompat.requestPermissions((Activity) v.getContext(), new String[]{permission}, PERMISSION_REQUEST_CALL_CONTACT);
+            return false;
+        }
     }
 
     private void showToast(String message) {

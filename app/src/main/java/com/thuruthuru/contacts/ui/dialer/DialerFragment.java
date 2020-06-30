@@ -15,6 +15,7 @@ import android.widget.Button;
 import android.widget.EditText;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
@@ -47,6 +48,7 @@ public class DialerFragment extends Fragment {
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_dialer, container, false);
+        ((AppCompatActivity) getActivity()).getSupportActionBar().setElevation(20);
 
         phoneField = (EditText) root.findViewById(R.id.phoneField);
         addNew = (TextView) root.findViewById(R.id.add);
@@ -122,7 +124,7 @@ public class DialerFragment extends Fragment {
                 if (phoneNumber.length() == 0)
                     addNew.setText("NEW");
                 else
-                    addNew.setText("ADD");
+                    setNumber("");
             }
         });
 
@@ -141,7 +143,8 @@ public class DialerFragment extends Fragment {
         String[] permissions = {
                 Manifest.permission.READ_CALL_LOG,
                 Manifest.permission.READ_PHONE_STATE,
-                Manifest.permission.READ_CONTACTS
+                Manifest.permission.READ_CONTACTS,
+                Manifest.permission.CALL_PHONE,
         };
 
         boolean granted = true;
@@ -158,12 +161,6 @@ public class DialerFragment extends Fragment {
             requestPermissions(permissions, PERMISSION_REQUEST_RECEIVER);
         }
 
-//        if (!Settings.canDrawOverlays(getActivity())) {
-//            // ask for setting
-//            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
-//                    Uri.parse("package:" + getActivity().getPackageName()));
-//            startActivityForResult(intent, REQUEST_OVERLAY_PERMISSION);
-//        }
         return root;
     }
 
@@ -197,7 +194,7 @@ public class DialerFragment extends Fragment {
             addNew.setTextColor(getResources().getColor(R.color.colorBackspace, null));
         } else {
             String phoneNum = phoneField.getText().toString();
-            boolean rc_granted = isPermissionGranted("Manifest.permission.READ_CONTACTS", PERMISSION_REQUEST_READ_CONTACTS);
+            boolean rc_granted = isPermissionGranted(Manifest.permission.READ_CONTACTS, PERMISSION_REQUEST_READ_CONTACTS);
             String name;
 
             if (rc_granted) {
